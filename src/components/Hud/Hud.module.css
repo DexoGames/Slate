@@ -1,0 +1,118 @@
+.hud {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--hud-h);
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 0 clamp(12px, 3vw, 28px);
+    background: var(--black);
+    border-bottom: 2px solid var(--orange);
+    z-index: 50;
+}
+
+.brand {
+    font-family: var(--font-display);
+    font-size: 1.15rem;
+    letter-spacing: 0.02em;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--bone);
+}
+
+.accent {
+    color: var(--orange);
+}
+
+.studio {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.stats {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-left: auto;
+}
+
+.stat {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    background: none;
+    border: none;
+    color: var(--bone);
+    white-space: nowrap;
+}
+
+.stat :global(svg) {
+    color: var(--bone-dim);
+}
+
+.cash {
+    color: var(--stat-money);
+}
+
+.cash :global(svg) {
+    color: var(--stat-money);
+}
+
+.low {
+    color: var(--danger);
+    animation: pulse 1.2s ease infinite;
+}
+
+.low :global(svg) {
+    color: var(--danger);
+}
+
+@keyframes pulse {
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.legacy {
+    cursor: pointer;
+    color: var(--stat-legacy);
+}
+
+.legacy :global(svg) {
+    color: var(--stat-legacy);
+}
+
+.legacy em {
+    font-style: normal;
+    font-size: 0.6rem;
+    color: var(--bone-dim);
+}
+
+.clock {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--orange);
+    white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+    .studio {
+        display: none;
+    }
+
+    .stats {
+        gap: 9px;
+    }
+}

@@ -1,0 +1,99 @@
+.row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.icon {
+    display: inline-flex;
+    flex: 0 0 auto;
+}
+
+.main {
+    flex: 1;
+    min-width: 0;
+}
+
+.labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+}
+
+.label {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+}
+
+.values {
+    font-size: 0.68rem;
+    font-weight: 500;
+    color: var(--bone-dim);
+    white-space: nowrap;
+}
+
+.values em {
+    font-style: normal;
+    font-weight: 700;
+    color: var(--bone);
+}
+
+.track {
+    position: relative;
+    height: 14px;
+    margin-top: 2px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-on-black);
+    overflow: hidden;
+}
+
+.box {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    opacity: 0.55;
+    transition: left 0.25s ease, width 0.25s ease;
+}
+
+.tick {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    margin-left: -1px;
+    background: var(--bone);
+    transition: left 0.25s ease;
+}
+
+.ghost {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    border: 1px dashed var(--line-strong);
+    transition: left 0.25s ease, width 0.25s ease;
+}
+
+.dead .track {
+    opacity: 0.5;
+}
+
+.deadline {
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        -45deg,
+        transparent 0 6px,
+        rgba(224, 68, 47, 0.25) 6px 12px
+    );
+}
+
+.deadLabel {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--danger);
+}

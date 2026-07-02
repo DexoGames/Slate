@@ -1,0 +1,123 @@
+:root {
+    /* --- single fixed palette (shared with dexo.games for visual consistency) --- */
+    --orange: #ff5a36;
+    --orange-deep: #cf4a25;
+    --orange-ink: #2a0f06; /* text on orange */
+    --orange-rgb: 255, 90, 54; /* same colour as --orange, as r, g, b for rgba() */
+
+    --black: #0d0d0d;
+    --black-soft: #171717; /* raised surfaces on black */
+    --black-soft-2: #1f1f1f; /* second-level raised surface */
+    --cream: #ece6db; /* warm paper */
+    --cream-soft: #e2dccf; /* alt paper / raised surfaces on cream */
+
+    --ink: #14130f; /* text on cream */
+    --ink-dim: #6b6657; /* muted text on cream */
+    --bone: #ece6db; /* text on black */
+    --bone-dim: #8f897c; /* muted text on black */
+
+    --line-on-cream: rgba(20, 19, 15, 0.12);
+    --line-on-black: rgba(236, 230, 219, 0.10);
+    --line-strong: rgba(236, 230, 219, 0.22);
+
+    /* gold award accent */
+    --gold: #e8b923;
+    --gold-ink: #3a2a02; /* text on gold */
+
+    /* --- the four stat axes: used EVERYWHERE, never re-mapped --- */
+    --stat-money: #2fe089; /* box office / cash */
+    --stat-money-ink: #06301c;
+    --stat-crowd: #ff5a36; /* mainstream acclaim */
+    --stat-crowd-ink: #2a0f06;
+    --stat-critic: #3aabff; /* critical / arty acclaim */
+    --stat-critic-ink: #06263a;
+    --stat-legacy: #e8b923; /* legacy (gold) */
+    --stat-legacy-ink: #3a2a02;
+
+    /* vision preservation is cream — it visibly chips away */
+    --vision: #ece6db;
+    --danger: #e0442f; /* bankruptcy, COMPROMISED stamps */
+
+    --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
+
+    --radius: 0px; /* everything is square */
+
+    --maxw: 1280px; /* app shell width */
+    --hud-h: 56px; /* fixed top HUD height */
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+body {
+    font-family: var(--font-mono);
+    background: var(--black);
+    color: var(--bone);
+    line-height: 1.6;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+/* --- self-hosted fonts (SIL OFL), copied from dexo.games --- */
+@font-face {
+    font-family: "Archivo Black";
+    src: url("/fonts/archivo-black-400.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("/fonts/jetbrains-mono-400.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("/fonts/jetbrains-mono-500.woff2") format("woff2");
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "JetBrains Mono";
+    src: url("/fonts/jetbrains-mono-700.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+img {
+    display: block;
+}
+
+button {
+    font-family: inherit;
+    color: inherit;
+}
+
+/* keyboard focus ring in the brand colour */
+:focus-visible {
+    outline: 2px solid var(--orange);
+    outline-offset: 2px;
+}
+
+::selection {
+    background: var(--orange);
+    color: var(--orange-ink);
+}

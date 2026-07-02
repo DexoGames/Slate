@@ -1,0 +1,24 @@
+.panel {
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.title {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--bone);
+    border-bottom: 2px solid var(--orange);
+    padding-bottom: 6px;
+}
+
+.bars {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}

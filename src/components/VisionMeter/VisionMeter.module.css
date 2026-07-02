@@ -1,0 +1,98 @@
+.wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--bone-dim);
+}
+
+.value {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--vision);
+}
+
+.badValue {
+    color: var(--danger);
+}
+
+.track {
+    position: relative;
+    height: 12px;
+    background: repeating-linear-gradient(
+        -45deg,
+        var(--black-soft-2) 0 5px,
+        rgba(224, 68, 47, 0.18) 5px 10px
+    );
+    border: 1px solid var(--line-on-black);
+}
+
+.big .track {
+    height: 22px;
+}
+
+.fill {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    background: var(--vision);
+    transition: width 0.25s ease;
+}
+
+.gate {
+    position: absolute;
+    top: -2px;
+    bottom: -2px;
+    width: 2px;
+    background: var(--gold);
+    z-index: 1;
+}
+
+.gateLabel {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+}
+
+.ledger {
+    list-style: none;
+    margin-top: 6px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-height: 160px;
+    overflow-y: auto;
+}
+
+.entry {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 0.68rem;
+    color: var(--bone-dim);
+}
+
+.entry span:last-child {
+    color: var(--danger);
+    font-weight: 700;
+}
+
+.credit span:last-child {
+    color: var(--stat-money);
+}
