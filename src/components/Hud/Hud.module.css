@@ -108,11 +108,34 @@
 }
 
 @media (max-width: 640px) {
+    .hud {
+        gap: 10px;
+        padding: 0 10px;
+    }
+
     .studio {
         display: none;
     }
 
     .stats {
-        gap: 9px;
+        gap: 8px;
+    }
+
+    .stat {
+        font-size: 0.68rem;
+        gap: 3px;
+    }
+
+    .brand {
+        font-size: 1rem;
+    }
+
+    .clock {
+        font-size: 0.6rem;
+        letter-spacing: 0.04em;
+    }
+
+    .legacy em {
+        display: none;
     }
 }

@@ -1,9 +1,50 @@
 import { GENRE_NORMS } from "./tuning";
-import type { Actor, Demand, Director, Script } from "./types";
-import { chance, int, makeId, pick, range, type Rng } from "./rng";
+import type { Actor, CastRole, CastSlot, Demand, Director, Film, GameState, Script } from "./types";
+import { chance, int, makeId, makeRng, pick, range, type Rng } from "./rng";
 
 interface IdBox {
   counter: number;
+}
+
+export function hashStr(s: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+/**
+ * The demand sheet for a (film, director) pair — deterministic per campaign
+ * seed and independent of the live game RNG, so previewing a negotiation
+ * never changes the world.
+ */
+export function demandsFor(game: GameState, film: Film, director: Director): Demand[] {
+  const rng = makeRng((game.seed ^ hashStr(film.id + director.id)) >>> 0);
+  return generateDemands(rng, { counter: 1 }, director, film.script, game.market.actors);
+}
+
+/** snapshot an actor into a cast slot, applying trait hooks at signing */
+export function makeCastSlot(
+  actor: Actor,
+  film: Film,
+  role: CastRole,
+  backendPct: number,
+): CastSlot {
+  const againstType =
+    !actor.typecast.includes(film.genre) && !actor.traits.includes("chameleon");
+  let appeal = actor.appeal;
+  let craft = actor.craft;
+  if (actor.traits.includes("box-office-poison")) appeal = Math.max(0, appeal - 10);
+  if (actor.traits.includes("method") && (film.genre === "drama" || film.genre === "war")) {
+    craft = Math.min(100, craft + 6);
+  }
+  const deal = {
+    salary: Math.round(actor.salary * (1 - backendPct / 100) * 10) / 10,
+    backendPoints: Math.round((backendPct / 100) * (actor.salary / 2) * 10) / 10,
+  };
+  return { role, actorId: actor.id, actorName: actor.name, deal, againstType, appeal, craft };
 }
 
 /**

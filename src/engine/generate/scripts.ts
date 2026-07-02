@@ -98,8 +98,8 @@ export function applyRewrite(
 ): Script {
   const passNo = script.rewrites.length + 1;
   const idx = Math.min(passNo - 1, TUNING.rewriteCoherence.length - 1);
-  let coherenceDelta = TUNING.rewriteCoherence[idx];
-  let hookDelta = TUNING.rewriteHook[idx];
+  let coherenceDelta: number = TUNING.rewriteCoherence[idx];
+  let hookDelta: number = TUNING.rewriteHook[idx];
   let ambitionDelta = 0;
   if (opts.byFixer && coherenceDelta < 0) {
     coherenceDelta *= TUNING.fixerCoherenceMult;

@@ -1,0 +1,131 @@
+.wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+    max-width: 720px;
+    margin: 0 auto;
+    padding-bottom: 24px;
+}
+
+.kicker {
+    text-align: center;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--orange);
+}
+
+.year {
+    text-align: center;
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 8vw, 3.6rem);
+    line-height: 0.9;
+    color: var(--bone);
+}
+
+.block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.categories {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.category {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    border-left: 3px solid var(--line-strong);
+    padding-left: 10px;
+}
+
+.won {
+    border-left-color: var(--gold);
+}
+
+.catName {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--gold);
+}
+
+.winner {
+    font-size: 0.78rem;
+    color: var(--bone);
+}
+
+.winner b {
+    color: var(--gold);
+}
+
+.nominees {
+    font-size: 0.62rem;
+    color: var(--bone-dim);
+}
+
+.news {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+    color: var(--stat-legacy);
+}
+
+.ledgerRow {
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    font-size: 0.72rem;
+    color: var(--bone-dim);
+}
+
+.ledgerRow b {
+    color: var(--bone);
+    margin-left: 6px;
+}
+
+.standings {
+    list-style: none;
+    counter-reset: rank;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.standings li {
+    counter-increment: rank;
+    display: flex;
+    gap: 14px;
+    align-items: baseline;
+    font-size: 0.72rem;
+    color: var(--bone-dim);
+}
+
+.standings li::before {
+    content: counter(rank) ".";
+    font-weight: 700;
+    width: 18px;
+}
+
+.standings li span:first-of-type {
+    flex: 1;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.player {
+    color: var(--bone);
+}
+
+.player span:first-of-type {
+    color: var(--orange);
+}

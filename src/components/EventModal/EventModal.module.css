@@ -1,0 +1,79 @@
+.filmLine {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--orange);
+    margin-bottom: 8px;
+}
+
+.body {
+    font-size: 0.82rem;
+    line-height: 1.6;
+    color: var(--bone);
+    margin-bottom: 16px;
+}
+
+.fork {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.trust,
+.protect {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+    padding: 14px;
+    font-family: var(--font-mono);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.trust {
+    background: transparent;
+    border: 2px solid var(--cream);
+    color: var(--bone);
+}
+
+.trust:hover {
+    background: var(--cream);
+    color: var(--ink);
+}
+
+.protect {
+    background: var(--orange);
+    border: 2px solid var(--orange);
+    color: var(--orange-ink);
+}
+
+.protect:hover {
+    background: var(--orange-deep);
+    border-color: var(--orange-deep);
+}
+
+.choiceKicker {
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    opacity: 0.75;
+}
+
+.choiceLabel {
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.choiceCost {
+    font-size: 0.64rem;
+    opacity: 0.85;
+}
+
+@media (max-width: 560px) {
+    .fork {
+        grid-template-columns: 1fr;
+    }
+}

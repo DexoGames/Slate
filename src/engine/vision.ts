@@ -6,7 +6,7 @@ import type { Film, VisionEntry } from "./types";
  * can show. The number is always derived from the entries, never stored.
  */
 export function visionScore(ledger: VisionEntry[]): number {
-  const total = ledger.reduce((sum, e) => sum + e.delta, TUNING.vpStart);
+  const total = ledger.reduce<number>((sum, e) => sum + e.delta, TUNING.vpStart);
   return Math.min(110, Math.max(0, total));
 }
 

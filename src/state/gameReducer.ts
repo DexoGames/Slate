@@ -1,4 +1,5 @@
 import { PRODUCTION_EVENTS } from "../data/events";
+import { scenarioById } from "../data/scenarios";
 import { applyRewrite } from "../engine/generate/scripts";
 import { newGame } from "../engine/newGame";
 import { walkAwayRisk } from "../engine/negotiation";
@@ -71,8 +72,13 @@ function relationship(state: GameState, personId: string, delta: number): GameSt
 
 export function gameReducer(state: GameState, action: Action): GameState {
   switch (action.type) {
-    case "NEW_GAME":
-      return newGame(action.seed, action.mode, action.studioName);
+    case "NEW_GAME": {
+      const fresh = newGame(action.seed, action.mode, action.studioName);
+      if (action.mode.kind === "scenario") {
+        return scenarioById(action.mode.scenarioId)?.apply(fresh) ?? fresh;
+      }
+      return fresh;
+    }
 
     case "LOAD":
       return action.state;

@@ -1,0 +1,288 @@
+.head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+}
+
+.card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.locked {
+    opacity: 0.55;
+}
+
+.cardHead {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.cardHead > div {
+    flex: 1;
+    min-width: 0;
+}
+
+.name {
+    font-family: var(--font-display);
+    font-size: 0.98rem;
+    line-height: 1.05;
+    text-transform: uppercase;
+    color: var(--bone);
+}
+
+.arch {
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange);
+}
+
+.salary {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--stat-money);
+    white-space: nowrap;
+}
+
+.styleAxis {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: var(--bone-dim);
+}
+
+.styleTrack {
+    position: relative;
+    flex: 1;
+    height: 6px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-on-black);
+}
+
+.styleDot {
+    position: absolute;
+    top: -4px;
+    width: 4px;
+    height: 12px;
+    margin-left: -2px;
+    background: var(--orange);
+}
+
+.statRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+}
+
+.fit {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: currentColor;
+}
+
+.traits {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.traits span {
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+    border: 1px solid var(--line-strong);
+    padding: 2px 6px;
+    cursor: help;
+}
+
+.record {
+    display: flex;
+    gap: 6px;
+}
+
+.recordDot {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 2px;
+    cursor: help;
+}
+
+.recordDot i {
+    width: 14px;
+    height: 6px;
+    display: block;
+}
+
+.pickBtn {
+    margin-top: auto;
+}
+
+/* ---- demand sheet ---- */
+
+.sheetGrid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 18px;
+    align-items: start;
+}
+
+.sheetLeft {
+    min-width: 0;
+}
+
+.sheetRight {
+    position: sticky;
+    top: calc(var(--hud-h) + 16px);
+}
+
+.hint {
+    font-size: 0.72rem;
+    line-height: 1.55;
+    color: var(--bone-dim);
+    margin-bottom: 12px;
+}
+
+.hint b {
+    color: var(--bone);
+}
+
+.demands {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.demand {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    transition: border-color 0.15s ease;
+}
+
+.deniedCard {
+    border-color: rgba(224, 68, 47, 0.6);
+}
+
+.demandHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 10px;
+}
+
+.demandLabel {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.detail {
+    font-size: 0.7rem;
+    font-style: italic;
+    color: var(--bone-dim);
+}
+
+.toggle {
+    display: flex;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.toggleBtn {
+    flex: 1;
+    padding: 8px 10px;
+    font-family: var(--font-mono);
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    background: transparent;
+    border: 2px solid var(--line-strong);
+    color: var(--bone-dim);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.grantOn {
+    background: var(--cream);
+    border-color: var(--cream);
+    color: var(--ink);
+}
+
+.denyOn {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--cream);
+}
+
+.footerPanel {
+    margin-top: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.riskRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.riskLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--bone-dim);
+    white-space: nowrap;
+}
+
+.riskTrack {
+    flex: 1;
+    height: 8px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-on-black);
+}
+
+.riskTrack div {
+    height: 100%;
+    background: var(--danger);
+    transition: width 0.2s ease;
+}
+
+.signRow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.signRow > :last-child {
+    margin-left: auto;
+}
+
+@media (max-width: 820px) {
+    .sheetGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .sheetRight {
+        position: static;
+        order: -1;
+    }
+}

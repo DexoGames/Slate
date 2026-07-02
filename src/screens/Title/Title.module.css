@@ -1,0 +1,200 @@
+.wrap {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    padding: clamp(20px, 5vw, 64px);
+    text-align: center;
+}
+
+.kicker {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.22em;
+    color: var(--bone-dim);
+}
+
+.logo {
+    font-family: var(--font-display);
+    font-size: clamp(3.4rem, 14vw, 7rem);
+    line-height: 0.9;
+    letter-spacing: 0.005em;
+    color: var(--bone);
+}
+
+.accent {
+    color: var(--orange);
+}
+
+.tag {
+    font-size: 0.9rem;
+    color: var(--bone-dim);
+}
+
+.actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 8px;
+}
+
+.advancedToggle {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--bone-dim);
+}
+
+.advancedToggle:hover {
+    color: var(--orange);
+}
+
+.advanced {
+    display: flex;
+    justify-content: center;
+}
+
+.seedLabel {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--bone-dim);
+}
+
+.seedInput {
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    color: var(--bone);
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    padding: 8px 10px;
+    width: 140px;
+}
+
+.seedInput:focus {
+    outline: 2px solid var(--orange);
+    outline-offset: 2px;
+}
+
+.scenarios {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 560px;
+    width: 100%;
+}
+
+.scenario {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    text-align: left;
+    padding: 14px;
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    color: var(--bone);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: border-color 0.15s ease;
+}
+
+.scenario:hover {
+    border-color: var(--orange);
+}
+
+.scenario b {
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+}
+
+.scenario em {
+    font-style: normal;
+    color: var(--orange);
+}
+
+.scenario span {
+    font-size: 0.68rem;
+    line-height: 1.5;
+    color: var(--bone-dim);
+}
+
+.help {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    text-align: left;
+}
+
+.help p {
+    font-size: 0.76rem;
+    line-height: 1.6;
+    color: var(--bone-dim);
+}
+
+.help b {
+    color: var(--orange);
+    letter-spacing: 0.06em;
+}
+
+.rules {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 240px));
+    gap: 14px;
+    margin-top: 22px;
+    text-align: left;
+}
+
+.rules > div {
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    padding: 14px;
+    font-size: 0.72rem;
+    line-height: 1.5;
+    color: var(--bone-dim);
+}
+
+.rules b {
+    display: block;
+    color: var(--bone);
+    letter-spacing: 0.1em;
+    margin-bottom: 4px;
+}
+
+.rules > div:nth-child(1) b {
+    color: var(--stat-money);
+}
+
+.rules > div:nth-child(2) b {
+    color: var(--stat-crowd);
+}
+
+.rules > div:nth-child(3) b {
+    color: var(--stat-legacy);
+}
+
+.footer {
+    margin-top: 18px;
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--bone-dim);
+}
+
+.footer a {
+    color: var(--orange);
+    text-decoration: none;
+}
+
+@media (max-width: 640px) {
+    .rules {
+        grid-template-columns: 1fr;
+    }
+}

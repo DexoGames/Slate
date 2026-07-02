@@ -16,6 +16,9 @@ export const TUNING = {
   lifelineStreamingCut: 0.9,
   /** min released films before the lifeline is offered */
   lifelineMinFilms: 3,
+  /** negative cash is a bridge loan while a film is scheduled — at a price */
+  debtInterest: 0.08, // per season on negative balances
+  debtFloor: -20, // $M — past this the bank stops answering
 
   // ------------------------------------------------------------- vision
   vpStart: 100,

@@ -1,0 +1,201 @@
+.head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.empty {
+    color: var(--bone-dim);
+    font-size: 0.8rem;
+}
+
+.shelf {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    gap: 12px;
+}
+
+.poster {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    aspect-ratio: 2 / 3;
+    padding: 12px;
+    text-align: left;
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+    overflow: hidden;
+}
+
+.poster:hover {
+    border-color: var(--orange);
+}
+
+.posterCompromised {
+    opacity: 0.75;
+}
+
+.year {
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--bone-dim);
+}
+
+.posterTitle {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    line-height: 1.02;
+    text-transform: uppercase;
+    color: var(--bone);
+    overflow-wrap: anywhere;
+}
+
+.awards {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: var(--gold);
+}
+
+.dots {
+    margin-top: auto;
+    display: flex;
+    gap: 8px;
+}
+
+.dot {
+    width: 14px;
+    height: 14px;
+    border: 2px solid;
+    display: inline-block;
+}
+
+.dotPending {
+    animation: shimmer 1.6s ease infinite;
+}
+
+@keyframes shimmer {
+    50% {
+        background: rgba(232, 185, 35, 0.35);
+    }
+}
+
+.stampSmall {
+    position: absolute;
+    right: -28px;
+    top: 18px;
+    rotate: 35deg;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--danger);
+    border: 2px solid var(--danger);
+    padding: 2px 26px;
+    background: rgba(13, 13, 13, 0.85);
+}
+
+.backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(13, 13, 13, 0.85);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    z-index: 100;
+}
+
+.sheet {
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    padding: 20px;
+    max-width: 620px;
+    width: 100%;
+    max-height: 86vh;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.sheetHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.sheetTitle {
+    font-family: var(--font-display);
+    font-size: 1.4rem;
+    line-height: 1;
+    text-transform: uppercase;
+}
+
+.sheetMeta {
+    font-size: 0.64rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+}
+
+.statGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 10px;
+}
+
+.statGrid span {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.statGrid em {
+    font-style: normal;
+    font-weight: 400;
+    font-size: 0.6rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+}
+
+.legacyEvents {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.legacyEvents li {
+    display: flex;
+    gap: 10px;
+    font-size: 0.68rem;
+    color: var(--bone-dim);
+}
+
+.legacyEvents li span:first-child {
+    flex: 0 0 54px;
+    font-weight: 700;
+}
+
+.legacyEvents li span:nth-child(2) {
+    flex: 1;
+}
+
+.awardsLine {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.7rem;
+    color: var(--gold);
+}

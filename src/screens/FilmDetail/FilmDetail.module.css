@@ -1,0 +1,428 @@
+.grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 18px;
+    align-items: start;
+}
+
+.left {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.right {
+    position: sticky;
+    top: calc(var(--hud-h) + 16px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.genre {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--orange);
+}
+
+.title {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 4vw, 2.2rem);
+    line-height: 0.95;
+    text-transform: uppercase;
+    color: var(--bone);
+}
+
+.dirLine {
+    font-size: 0.68rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+}
+
+.block {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.todo {
+    border-color: var(--orange);
+}
+
+.logline {
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: var(--bone-dim);
+    font-style: italic;
+}
+
+.chipRow {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 16px;
+}
+
+.rewriteRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.rewriteHint {
+    font-size: 0.64rem;
+    color: var(--bone-dim);
+}
+
+.pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+}
+
+.slotName {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    text-transform: uppercase;
+}
+
+.demandList,
+.castList {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 0.66rem;
+    color: var(--bone-dim);
+}
+
+.deniedLine {
+    color: var(--danger);
+}
+
+.castList b {
+    color: var(--bone);
+}
+
+.castList em {
+    font-style: normal;
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-left: 6px;
+}
+
+.againstTag {
+    margin-left: 6px;
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+}
+
+.sliderRow {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sliderHead {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.sliderLabel {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--bone-dim);
+}
+
+.sliderHead b {
+    font-size: 0.82rem;
+    color: var(--bone);
+}
+
+.belowFloor {
+    color: var(--danger);
+}
+
+.sliderTrackWrap {
+    position: relative;
+}
+
+.slider {
+    width: 100%;
+    accent-color: var(--orange);
+}
+
+.marks {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    top: 100%;
+    height: 0;
+    pointer-events: none;
+}
+
+.mark {
+    position: absolute;
+    top: -4px;
+    width: 2px;
+    height: 6px;
+    background: var(--gold);
+}
+
+.markLabels {
+    display: flex;
+    gap: 16px;
+    font-size: 0.56rem;
+    letter-spacing: 0.06em;
+    color: var(--gold);
+}
+
+.bond {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.66rem;
+    color: var(--bone-dim);
+    cursor: pointer;
+}
+
+.bond input {
+    accent-color: var(--orange);
+}
+
+.greenlightRow {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.greenlightRow > :last-child {
+    margin-left: auto;
+}
+
+.greenlightHint {
+    font-size: 0.62rem;
+    color: var(--orange);
+}
+
+.abandon {
+    align-self: flex-start;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--bone-dim);
+    text-decoration: underline;
+}
+
+.abandon:hover {
+    color: var(--danger);
+}
+
+.hint {
+    font-size: 0.7rem;
+    line-height: 1.5;
+    color: var(--bone-dim);
+}
+
+.noTests {
+    font-size: 0.66rem;
+    color: var(--gold);
+}
+
+.tools {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.tool {
+    display: grid;
+    grid-template-columns: 190px 1fr auto;
+    gap: 4px 14px;
+    align-items: center;
+    text-align: left;
+    padding: 10px 12px;
+    background: transparent;
+    border: 2px solid var(--line-strong);
+    color: var(--bone-dim);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: all 0.15s ease;
+}
+
+.tool:hover:not(:disabled) {
+    border-color: var(--cream);
+}
+
+.toolOn {
+    border-color: var(--cream);
+    background: rgba(236, 230, 219, 0.06);
+    color: var(--bone);
+}
+
+.toolDisabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.toolLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.toolDesc {
+    font-size: 0.64rem;
+}
+
+.toolCost {
+    font-size: 0.62rem;
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.toolCost b {
+    color: var(--danger);
+}
+
+.strategies {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.strategy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+    padding: 10px;
+    background: transparent;
+    border: 2px solid var(--line-strong);
+    color: var(--bone-dim);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    transition: all 0.15s ease;
+}
+
+.strategyOn {
+    border-color: var(--orange);
+    color: var(--bone);
+}
+
+.strategy b {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+}
+
+.strategy span {
+    font-size: 0.58rem;
+    line-height: 1.45;
+}
+
+.windows {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.window {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    padding: 10px 8px;
+    background: transparent;
+    border: 2px solid var(--line-strong);
+    color: var(--bone-dim);
+    cursor: pointer;
+    font-family: var(--font-mono);
+    text-align: left;
+    transition: all 0.15s ease;
+}
+
+.windowOn {
+    border-color: var(--orange);
+    color: var(--bone);
+}
+
+.window b {
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+}
+
+.window span {
+    font-size: 0.56rem;
+}
+
+.compWarn {
+    color: var(--danger);
+}
+
+.awardsTag {
+    color: var(--gold);
+}
+
+.statusLine {
+    font-size: 0.8rem;
+}
+
+.eventLog {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-size: 0.68rem;
+    color: var(--bone-dim);
+}
+
+.eventLog b {
+    color: var(--bone);
+}
+
+.eventLog em {
+    font-style: normal;
+    font-size: 0.6rem;
+}
+
+@media (max-width: 820px) {
+    .grid {
+        grid-template-columns: 1fr;
+    }
+
+    .right {
+        position: static;
+        order: -1;
+    }
+
+    .pair,
+    .strategies,
+    .windows {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .tool {
+        grid-template-columns: 1fr;
+    }
+}

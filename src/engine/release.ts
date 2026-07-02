@@ -9,7 +9,6 @@ import type {
   Verdict,
 } from "./types";
 import { clamp, lognormalFactor, normal, type Rng } from "./rng";
-import { crowdLean } from "./quality";
 
 /**
  * Variance/ceiling budget for a film. Granting demands widens AND uncaps;

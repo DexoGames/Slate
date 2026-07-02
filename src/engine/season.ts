@@ -1,9 +1,10 @@
 import { PRODUCTION_EVENTS } from "../data/events";
+import { scenarioById } from "../data/scenarios";
 import { runAwards } from "./awards";
 import { generateActor, generateDirector, generateWriter } from "./generate/people";
 import { generateScript } from "./generate/scripts";
 import { legacyPointsFor, legacyTierLabel, seedLegacy, tickLegacy } from "./legacy";
-import { rollRelease, VERDICT_LABELS } from "./release";
+import { rollRelease } from "./release";
 import { rivalBuysScript, tickRivals } from "./rivals";
 import { computeCampaignScore, productionSlots } from "./score";
 import { TUNING } from "./tuning";
@@ -16,7 +17,7 @@ import type {
   SeasonStamp,
   Writer,
 } from "./types";
-import { chance, clamp, makeRng, pick, shuffle, type Rng } from "./rng";
+import { chance, clamp, makeRng, pick, type Rng } from "./rng";
 
 export function sameSeason(a: SeasonStamp, b: SeasonStamp): boolean {
   return a.year === b.year && a.season === b.season;
@@ -368,10 +369,13 @@ export function advanceSeason(state: GameState): GameState {
     s = { ...s, yearEnd, clock: { year: endedYear + 1, season: 0 } };
     s = yearEndPeople(rng, s);
 
-    // campaign end?
+    // campaign end? (scenarios can also complete early by hitting their goal)
     const lengthYears =
       s.mode.kind === "campaign" || s.mode.kind === "scenario" ? s.mode.lengthYears : Infinity;
-    if (endedYear >= lengthYears) {
+    const scenarioWon =
+      s.mode.kind === "scenario" &&
+      (scenarioById(s.mode.scenarioId)?.won(s) ?? false);
+    if (endedYear >= lengthYears || scenarioWon) {
       s = {
         ...s,
         gameOver: { reason: "campaign-complete", score: computeCampaignScore(s) },
@@ -383,7 +387,22 @@ export function advanceSeason(state: GameState): GameState {
   }
 
   // ── 7. bankruptcy check + the one lifeline
+  // a finished film is collateral: the bank bridges small negative balances
+  // (at interest) while something is scheduled, but there is a hard floor
   if (s.studio.cash < 0 && !s.gameOver) {
+    const interest = Math.abs(s.studio.cash) * TUNING.debtInterest;
+    s = {
+      ...s,
+      studio: { ...s.studio, cash: Math.round((s.studio.cash - interest) * 10) / 10 },
+    };
+  }
+  const hasScheduled = s.studio.filmIds.some((id) => {
+    const f = s.films[id];
+    return f && (f.stage === "scheduled" || f.stage === "post" || f.stage === "production");
+  });
+  const broke =
+    s.studio.cash < TUNING.debtFloor || (s.studio.cash < 0 && !hasScheduled);
+  if (broke && !s.gameOver) {
     const releasedCount = s.studio.filmIds.filter((id) => s.films[id]?.stage === "released").length;
     if (!s.studio.lifelineUsed && releasedCount >= TUNING.lifelineMinFilms) {
       s = {

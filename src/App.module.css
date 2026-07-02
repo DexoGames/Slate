@@ -1,0 +1,9 @@
+.shell {
+    min-height: 100vh;
+}
+
+.main {
+    max-width: var(--maxw);
+    margin: 0 auto;
+    padding: calc(var(--hud-h) + 20px) clamp(16px, 3.5vw, 40px) 60px;
+}

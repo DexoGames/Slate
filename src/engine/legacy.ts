@@ -91,8 +91,8 @@ export function tickLegacy(
       year: currentYear,
       label: e.label,
       delta: Math.round(range(rng, e.min, e.max)),
-      ...("cash" in e && e.cash ? { cash: e.cash } : {}),
     };
+    if ("cash" in e && typeof e.cash === "number") event.cash = e.cash;
   }
 
   const events = event ? [...legacy.events, event] : legacy.events;

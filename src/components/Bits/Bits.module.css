@@ -1,0 +1,98 @@
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: var(--bone);
+    white-space: nowrap;
+}
+
+.chip b {
+    font-weight: 700;
+}
+
+.chip em {
+    font-style: normal;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+}
+
+.dual {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.dualRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.dualLabel {
+    flex: 0 0 52px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+}
+
+.dualTrack {
+    flex: 1;
+    height: 8px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-on-black);
+}
+
+.dualTrack div {
+    height: 100%;
+    transition: width 0.2s ease;
+}
+
+.dualVal {
+    flex: 0 0 24px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    text-align: right;
+}
+
+.section {
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--bone);
+    border-bottom: 2px solid var(--orange);
+    padding-bottom: 5px;
+    margin-bottom: 10px;
+}
+
+.weight {
+    font-size: 0.62rem;
+    letter-spacing: 0.1em;
+    color: var(--orange);
+}
+
+.weight i {
+    font-style: normal;
+    color: var(--line-strong);
+}
+
+.panel {
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    padding: 14px;
+}
+
+.panelOrange {
+    border-color: var(--orange);
+}
+
+.panelDanger {
+    border-color: var(--danger);
+}
