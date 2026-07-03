@@ -36,7 +36,7 @@ export function Title({
         SLATE<span className={styles.accent}>.</span>
       </h1>
       <p className={styles.tag}>
-        Money buys quality. It never buys taste.
+        Manage your very own studio
       </p>
       <div className={styles.actions}>
         {hasSave && (
