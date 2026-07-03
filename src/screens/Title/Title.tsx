@@ -74,52 +74,55 @@ export function Title({
         <Modal title="HOW TO PLAY" onClose={() => setShowHelp(false)} wide>
           <div className={styles.help}>
             <p>
-              <b>THE LOOP.</b> Option a script, negotiate a director's demands, cast,
-              set budget and days, greenlight — then choose your safety tools and a
-              release window. Each turn is one season; four seasons make a year.
+              <b>THE LOOP.</b> Pick up a script, hire a director, cast it, set the
+              budget and schedule, then greenlight. After the shoot you choose a
+              release window and how hard to push it. Each turn is a season, and
+              four seasons make a year.
             </p>
             <p>
-              <b>THE BET.</b> Every decision reshapes the outcome bars. Granting a
-              director's demands widens the range and raises the ceiling; denying
-              them narrows and caps it. Money can buy execution — it cannot buy
-              ambition.
+              <b>THE BET.</b> Every choice reshapes the forecast. Grant a director's
+              demands and the range gets wider and the ceiling higher. Deny them and
+              it narrows and caps out. A bigger budget sharpens the filmmaking, but
+              it won't put ambition into a script that never had it.
             </p>
             <p>
-              <b>VISION.</b> Test screenings, reshoots, focus-grouped marketing and
-              denied demands all chip the cream Vision bar. Fall below the gold line
-              and the film is COMPROMISED: it can never earn Legacy, no matter what
-              it grosses.
+              <b>VISION.</b> Test screenings, reshoots, focus-grouped marketing, and
+              denied demands all chip away at a film's Vision. Drop below the line
+              and it's compromised, so it can't earn Legacy no matter how it does at
+              the box office.
             </p>
             <p>
-              <b>LEGACY.</b> The only score that compounds. It resolves over eight
-              years after release, seeded by ambition and surviving vision — and its
-              dice can never be loaded. The safest films are the least likely to
-              become classics.
+              <b>LEGACY.</b> The one thing that builds over time. It settles in the
+              eight years after release, off the film's ambition and how much of its
+              vision survived. You can't play it safe into a classic; the careful
+              films are usually the ones nobody remembers.
             </p>
             <p>
-              <b>DON'T DIE.</b> Overhead ticks every season. A scheduled film lets
-              the bank bridge a small overdraft (at interest). Run out entirely and
-              you get exactly one library sale. Then it's over.
+              <b>DON'T DIE.</b> Overhead comes out every season. If you have a film
+              scheduled, the bank will cover a small shortfall at interest. Run dry
+              with nothing coming and you get one library sale to stay open. After
+              that you're done.
             </p>
             <p>
-              <b>FRANCHISES.</b> A profitable, loved film mints an IP; adaptations
-              and remake rights appear in the market. Awareness is bankable safety —
-              but every instalment raises the bar and tires the audience, and
-              auteurs only do your sequel if you promise to greenlight their weird
-              thing. Break that promise and the town hears about it.
+              <b>FRANCHISES.</b> A film that makes money and lands with audiences
+              becomes a franchise, and adaptation and remake rights turn up in the
+              market too. A known name is safer to open, but each new instalment
+              raises expectations and tires the audience out. Auteurs will only take
+              your sequel if you agree to back their passion project first. Break
+              that promise and word gets around.
             </p>
             <p>
-              <b>THE NOISE.</b> Marketing posture (QUIET / STANDARD / EVENT) sets
-              both the opening and the bar the film is judged against —
-              under-deliver on an EVENT and the legs collapse; over-deliver quietly
-              and you have a sleeper. The Meridian Festival each Spring is the only
-              critic heat money can buy before release.
+              <b>THE NOISE.</b> How loud you go (QUIET, STANDARD, EVENT) sets the
+              opening and the bar the film has to clear. Oversell an EVENT and word
+              of mouth dies fast. Sneak out a quiet one that beats expectations and
+              you have a sleeper. The Meridian Festival each spring is the one place
+              to buy some critical buzz before release.
             </p>
             <p>
-              <b>PEOPLE.</b> Multi-film contracts lock a rate and block rival
-              poaching — until a star's price outgrows the paper and they hold out
-              on set. Risky stars are cheap for a reason: when the scandal breaks,
-              you stand by them or cut them loose, and everyone remembers which.
+              <b>PEOPLE.</b> A multi-film deal locks in a rate and keeps rivals from
+              poaching, until a star outgrows the contract and starts holding out on
+              set. Cheap risky stars come with a catch: when a scandal hits, you
+              stand by them or drop them, and people remember which.
             </p>
           </div>
         </Modal>
@@ -146,12 +149,11 @@ export function Title({
           <b>MONEY</b> keeps the lights on. Run out and it's over.
         </div>
         <div>
-          <b>ACCLAIM</b> comes in two currencies — crowds and critics — that rarely
-          pay out together.
+          <b>ACCLAIM</b> comes from crowds and critics, who rarely agree.
         </div>
         <div>
-          <b>LEGACY</b> arrives years late, only for films whose vision survived
-          your own safety tools.
+          <b>LEGACY</b> arrives years later, only for films whose vision survived to
+          release.
         </div>
       </div>
       <p className={styles.footer}>

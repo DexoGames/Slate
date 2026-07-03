@@ -138,8 +138,9 @@ function DirectorList({
         </Button>
       </div>
       <p className={styles.legend}>
-        Bars are the town's read — the faded band is how unsure they are. You only
-        learn the truth by working with them. Best fits for {GENRE_LABELS[genre]} come first.
+        These bars are the town's read on each director, and the faded band is how
+        unsure they are. You only find out for sure by working with them. Best fits
+        for {GENRE_LABELS[genre]} come first.
       </p>
       <div className={styles.grid}>
         {scored.map(({ d, rep, fit, locked, marquee }) => {
@@ -177,19 +178,19 @@ function DirectorList({
                   est={rep.craftEst}
                   band={rep.band}
                   color="var(--cream)"
-                  hint="Craft — the town's estimate; the faded band is their uncertainty"
+                  hint="Craft, as the town estimates it. The faded band is how unsure they are."
                 />
                 <BandBar
                   label="Vision"
                   est={rep.visionEst}
                   band={rep.band}
                   color="var(--stat-legacy)"
-                  hint="Vision — the town's estimate; the faded band is their uncertainty"
+                  hint="Vision, as the town estimates it. The faded band is how unsure they are."
                 />
               </div>
               <div className={styles.tagRow}>
                 <StyleLean style={d.style} />
-                <span className={styles.chaos} title="Chaos — how wide their outcomes swing">
+                <span className={styles.chaos} title="Chaos: how wide their results swing">
                   <IconDice size={11} /> CHAOS {d.volatility}
                 </span>
               </div>
@@ -207,7 +208,7 @@ function DirectorList({
                   {d.trackRecord.slice(-4).map((r, i) => (
                     <span
                       key={i}
-                      title={`${r.title} — crowd ${r.crowd}, critics ${r.critic}`}
+                      title={`${r.title}: crowd ${r.crowd}, critics ${r.critic}`}
                       className={styles.recordDot}
                     >
                       <i style={{ background: r.money > 0 ? "var(--stat-money)" : r.money < 0 ? "var(--danger)" : "var(--bone-dim)" }} />

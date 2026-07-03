@@ -141,8 +141,8 @@ function Development({
             </Button>
             <span className={styles.rewriteHint}>
               {passes === 0
-                ? "A first pass usually sharpens (+coherence, +hook)."
-                : `Pass ${passes + 1}: ${nextCoh > 0 ? "+" : ""}${nextCoh} coherence. The stack is the trap.`}
+                ? "A first pass usually sharpens things (+coherence, +hook)."
+                : `Pass ${passes + 1}: ${nextCoh > 0 ? "+" : ""}${nextCoh} coherence. Each rewrite helps less than the last.`}
             </span>
           </div>
         </Panel>
@@ -223,7 +223,7 @@ function Development({
           <label className={styles.bond}>
             <input type="checkbox" checked={bond} onChange={(e) => setBond(e.target.checked)} />
             <IconShield size={13} />
-            COMPLETION BOND · {fmtMoney(budget * TUNING.completionBondPct)} — the one hedge
+            COMPLETION BOND · {fmtMoney(budget * TUNING.completionBondPct)} · the only hedge
             that costs no vision
           </label>
           <div className={styles.greenlightRow}>
@@ -256,7 +256,7 @@ function Development({
         </Panel>
 
         <button className={styles.abandon} onClick={onAbandon}>
-          PUT “{film.title.toUpperCase()}” IN TURNAROUND (script cost is sunk)
+          PUT “{film.title.toUpperCase()}” IN TURNAROUND (you don't get the script cost back)
         </button>
       </div>
       <div className={styles.right}>
@@ -425,8 +425,8 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
             <IconScissors size={12} /> THE SAFETY TOOLBOX
           </SectionTitle>
           <p className={styles.hint}>
-            Every tool narrows the release roll — and chips the film's vision. The
-            legacy roll cannot be narrowed by anything.
+            Every tool narrows the range on release and chips away at the film's
+            vision. Legacy is the one thing none of them can touch.
           </p>
           {noTests && (
             <p className={styles.noTests}>
@@ -520,7 +520,7 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
               >
                 <b>{s.toUpperCase()}</b>
                 <span>
-                  {s === "wide" && "Full theatrical swing. Highest ceiling, real floor."}
+                  {s === "wide" && "Full theatrical release. Highest ceiling, real risk."}
                   {s === "platform" && "Slow burn for critics. Capped opening, +critics."}
                   {s === "streaming" && `Flat sale ≈ ${fmtMoney(film.budget * t.streamingSaleMult)}. No upside. −${Math.abs(t.vpStreamingDump)} vision.`}
                 </span>
@@ -536,9 +536,9 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
               >
                 <b>{p.toUpperCase()}</b>
                 <span>
-                  {p === "quiet" && "Sneak it out. Cheap P&A, low bar — over-deliver and the legs are yours."}
+                  {p === "quiet" && "Sneak it out. Cheap P&A and a low bar, so beat it and word of mouth carries."}
                   {p === "standard" && "A normal campaign. The film is judged as itself."}
-                  {p === "event" && "Promise the world (+25% P&A). Big opening — and a bar the film had better clear."}
+                  {p === "event" && "Promise the world (+25% P&A). Big opening, but a bar the film had better clear."}
                 </span>
               </button>
             ))}
@@ -565,7 +565,7 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
             </p>
           )}
           {film.festival === "submitted" && (
-            <p className={styles.festivalLine}>SUBMITTED TO THE MERIDIAN — SCREENS IN SPRING</p>
+            <p className={styles.festivalLine}>SUBMITTED TO THE MERIDIAN · SCREENS IN SPRING</p>
           )}
           <div className={styles.windows}>
             {windows.map((w, i) => {
@@ -629,7 +629,7 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
           </div>
         </Panel>
         <button className={styles.abandon} onClick={onAbandon}>
-          SHELVE IT — WRITE OFF {fmtMoney(film.talentCost + film.budget + film.overruns)}
+          SHELVE IT · WRITE OFF {fmtMoney(film.talentCost + film.budget + film.overruns)}
         </button>
       </div>
       <div className={styles.right}>
@@ -680,7 +680,7 @@ function Status({ game, film, onBack, onAbandon }: Props) {
             <ul className={styles.eventLog}>
               {film.eventHistory.map((e, i) => (
                 <li key={i}>
-                  <b>{e.label}</b> — {e.choice === "trust" ? "trusted the filmmaker" : "protected the investment"}{" "}
+                  <b>{e.label}</b> · {e.choice === "trust" ? "trusted the filmmaker" : "protected the investment"}{" "}
                   <em>({e.effect})</em>
                 </li>
               ))}
@@ -689,7 +689,7 @@ function Status({ game, film, onBack, onAbandon }: Props) {
         </Panel>
         {(film.stage === "production" || film.stage === "post") && (
           <button className={styles.abandon} onClick={onAbandon}>
-            SHUT IT DOWN — WRITE OFF {fmtMoney(film.talentCost + film.budget + film.overruns)}
+            SHUT IT DOWN · WRITE OFF {fmtMoney(film.talentCost + film.budget + film.overruns)}
           </button>
         )}
       </div>

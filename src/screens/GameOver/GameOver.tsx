@@ -18,7 +18,7 @@ function shareText(game: GameState): string {
   const score = game.gameOver?.score;
   const years = game.clock.year - 1;
   return [
-    `SLATE — ${game.studio.name.toUpperCase()}`,
+    `SLATE · ${game.studio.name.toUpperCase()}`,
     score
       ? `${years} years · score ${score.total} · ${score.grade}`
       : `${years} years · bankrupt`,

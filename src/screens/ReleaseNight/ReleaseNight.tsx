@@ -17,14 +17,14 @@ function pullQuote(kind: "crowd" | "critic", score: number): string {
     return "“We left when the projector was still on.”";
   }
   if (score >= 85) return "“A masterpiece. Full stop, end of review.”";
-  if (score >= 70) return "“Thrillingly alive — the rare studio picture with a pulse.”";
+  if (score >= 70) return "“Thrillingly alive, the rare studio picture with a pulse.”";
   if (score >= 55) return "“Ambitious, uneven, worth your time.”";
   if (score >= 40) return "“Competent, anonymous, forgotten by dinner.”";
   return "“One star, and that's for the catering in the lobby scene.”";
 }
 
 function legacyLine(band: [number, number], eligible: boolean): string {
-  if (!eligible) return "COMPROMISED — this one will not be remembered.";
+  if (!eligible) return "COMPROMISED. This one won't be remembered.";
   const mid = (band[0] + band[1]) / 2;
   if (mid >= 65) return "Early cult murmurs. People are already arguing about it.";
   if (mid >= 45) return "A certain kind of person is going to love this in ten years.";
@@ -178,7 +178,7 @@ function Details({ film }: { film: Film }) {
                   ))}
                 {b.noise !== 0 && (
                   <li className={styles.noise}>
-                    <span>the roll</span>
+                    <span>luck</span>
                     <span>
                       {b.noise > 0 ? "+" : ""}
                       {b.noise}

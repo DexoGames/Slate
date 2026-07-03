@@ -206,7 +206,7 @@ export function generateDemands(
       kind: "passion-project",
       weight: 3,
       label: "Greenlight my passion project",
-      detail: `“I'll do your sequel. In exchange, the studio greenlights MY film — the one nobody else will touch — within ${TUNING.franchise.passionDeadlineYears} years. In writing.”`,
+      detail: `“I'll do your sequel. In exchange, the studio greenlights MY film, the one nobody else will touch, within ${TUNING.franchise.passionDeadlineYears} years. In writing.”`,
     });
   }
 
@@ -258,7 +258,7 @@ export function generateDemands(
       kind: "attached-actor",
       weight: w(1.4),
       label: `Attach ${muse.name}`,
-      detail: `“I only make this with ${muse.name.split(" ")[0]}. Non-negotiable. Well— mostly.”`,
+      detail: `“I only make this with ${muse.name.split(" ")[0]}. Non-negotiable. Well, mostly.”`,
       actorId: muse.id,
     });
   }

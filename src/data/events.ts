@@ -41,7 +41,7 @@ export const PRODUCTION_EVENTS: ProductionEventDef[] = [
     title: "TEN MORE DAYS",
     body: "The director wants ten more days to reshoot the ending they now describe as “a betrayal of the whole film.” The crew is on overtime.",
     trust: { label: "Give them the days", effect: "-$4M · execution may rise", cash: -4, eBonus: 5 },
-    protect: { label: "Wrap on schedule", effect: "-8 Vision · outcomes narrow", vp: -8, eBonus: 0 },
+    protect: { label: "Wrap on schedule", effect: "-8 Vision · forecast narrows", vp: -8, eBonus: 0 },
   },
   {
     id: "feud",
@@ -55,7 +55,7 @@ export const PRODUCTION_EVENTS: ProductionEventDef[] = [
     id: "leak",
     title: "THE CUT LEAKS",
     body: "Twelve minutes leaked online. The internet has decided the film is either a masterpiece or unreleasable, depending on the thread.",
-    trust: { label: "“They'll get it in context”", effect: "Outcomes widen slightly", sigma: 2 },
+    trust: { label: "“They'll get it in context”", effect: "Forecast widens slightly", sigma: 2 },
     protect: { label: "Recut the act now", effect: "-$3M · -12 Vision · narrows", cash: -3, vp: -12 },
   },
   {
@@ -92,7 +92,7 @@ export const PRODUCTION_EVENTS: ProductionEventDef[] = [
   {
     id: "injury",
     title: "STUNT GONE WRONG",
-    body: "A rig failed. The stunt double is fine — the schedule is not, and the insurers have entered the chat.",
+    body: "A rig failed. The stunt double is fine. The schedule is not, and the insurers have entered the chat.",
     bigBudgetOnly: true,
     bondable: true,
     trust: { label: "Pause and reset safely", effect: "-$5M (bond covers if held)", cash: -5 },
@@ -109,7 +109,7 @@ export const PRODUCTION_EVENTS: ProductionEventDef[] = [
     id: "composer",
     title: "THE SCORE ISN'T WORKING",
     body: "The temp track is doing all the emotional work. The composer's new pages sound like a lawsuit against a better film.",
-    trust: { label: "Trust the composer", effect: "Wider outcomes", sigma: 2 },
+    trust: { label: "Trust the composer", effect: "Wider forecast", sigma: 2 },
     protect: { label: "License the temp track", effect: "-$2M · -4 Vision", cash: -2, vp: -4 },
   },
   {

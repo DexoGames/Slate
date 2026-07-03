@@ -109,8 +109,8 @@ export function Casting({
           </Panel>
         )}
         <p className={styles.hint}>
-          Sorted by fit — the director's pick, then names you hold, then faces the
-          crowd ties to {GENRE_LABELS[genre]}. Bars are appeal vs craft; stars are box-office pull.
+          Sorted by fit: the director's pick, then names you hold, then faces the
+          crowd ties to {GENRE_LABELS[genre]}. Bars are appeal and craft; stars are box-office pull.
         </p>
         <div className={styles.actors}>
           {scored.map(({ a, attached, contracted, suited, marquee }) => {
@@ -159,7 +159,7 @@ export function Casting({
                   </span>
                 </div>
                 <DualBar a={a.appeal} b={a.craft} aLabel="Appeal" bLabel="Craft" />
-                <div className={styles.starRow} title={`Star power — fame ${a.fame}`}>
+                <div className={styles.starRow} title={`Star power (fame ${a.fame})`}>
                   <span className={styles.starRowLabel}>STAR</span>
                   <span className={styles.starPips}>
                     {Array.from({ length: 5 }, (_, i) => (
@@ -174,14 +174,14 @@ export function Casting({
                   <span className={styles.typecast}>
                     {a.typecast.map((g) => GENRE_LABELS[g]).join(" · ")}
                   </span>
-                  <span className={styles.rangeChip} title="Range — how well they play against type">
+                  <span className={styles.rangeChip} title="Range: how well they play against type">
                     RANGE {a.range}
                   </span>
                 </div>
                 {against && (
                   <span
                     className={styles.against}
-                    title={`Against type: wider outcomes; payoff scales with range (${a.range})`}
+                    title={`Against type: wider results, and the payoff scales with their range (${a.range})`}
                   >
                     <IconDice size={11} /> AGAINST TYPE
                   </span>
@@ -280,7 +280,7 @@ export function Casting({
               value={chemistry > 0 ? `+${chemistry}` : chemistry}
               label="chemistry"
               color={chemistry >= 0 ? "var(--stat-money)" : "var(--danger)"}
-              title="How these people read together on screen — you only learn it once they're cast"
+              title="How these people read together on screen. You only find out once they're cast."
             />
           )}
           <Button

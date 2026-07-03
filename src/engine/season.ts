@@ -120,7 +120,7 @@ function spawnScandal(rng: Rng, state: GameState, film: Film): PendingEvent | nu
       eventId: "scandal",
       scandalActorId: actor.id,
       title: "FRONT PAGE, WORST TIMING",
-      body: `${actor.name} is suddenly the story — and not the kind marketing can use. The trades want a statement. Their lawyer wants a miracle. Your film wants a decision.`,
+      body: `${actor.name} is suddenly the story, and not the kind marketing can use. The trades want a statement. Their lawyer wants a miracle. Your film wants a decision.`,
       trustLabel: "Stand by them",
       trustEffect: `crowd −${Math.abs(t.standByCrowd)} · hype ${t.standByHype} · their loyalty, forever`,
       protectLabel: "Cut them loose",
@@ -150,7 +150,7 @@ function spawnHoldout(rng: Rng, state: GameState, film: Film): PendingEvent | nu
       eventId: "holdout",
       scandalActorId: actor.id,
       title: "THE QUOTE HAS MOVED",
-      body: `${actor.name} signed cheap and got famous on your dime — and now their agent is calling about “the number”. They're contracted. They're also suddenly very tired, and shooting a lot of takes with their eyes.`,
+      body: `${actor.name} signed cheap and got famous on your dime, and now their agent is calling about “the number”. They're contracted. They're also suddenly very tired, and shooting a lot of takes with their eyes.`,
       trustLabel: "Pay the new quote",
       trustEffect: `−$${bump}M now · contract reset to market rate · they remember`,
       protectLabel: "Hold them to the paper",
@@ -185,9 +185,9 @@ function resolveFestival(rng: Rng, state: GameState, stamp: SeasonStamp): GameSt
           kind: "awards" as const,
           text:
             result === "golden"
-              ? `“${film.title.toUpperCase()}” TAKES THE GOLDEN MERIDIAN — STANDING OVATION, SEVERAL TEARS`
+              ? `“${film.title.toUpperCase()}” TAKES THE GOLDEN MERIDIAN: STANDING OVATION, SEVERAL TEARS`
               : result === "divisive"
-                ? `“${film.title.toUpperCase()}” SPLITS THE MERIDIAN JURY — WALKOUTS AND A TEN-MINUTE OVATION, SIMULTANEOUSLY`
+                ? `“${film.title.toUpperCase()}” SPLITS THE MERIDIAN JURY: WALKOUTS AND A TEN-MINUTE OVATION AT ONCE`
                 : `“${film.title.toUpperCase()}” POLITELY APPLAUDED AT THE MERIDIAN, IMMEDIATELY FORGOTTEN`,
         },
       ],
@@ -287,7 +287,7 @@ function yearEndPeople(rng: Rng, state: GameState): GameState {
       poachNews.push({
         stamp: state.clock,
         kind: "market",
-        text: `${pick(rng, state.rivals).name.toUpperCase()} CIRCLES ${a.name.toUpperCase()} — QUOTE JUMPS OVERNIGHT`,
+        text: `${pick(rng, state.rivals).name.toUpperCase()} CIRCLES ${a.name.toUpperCase()}, QUOTE JUMPS OVERNIGHT`,
       });
       return { ...a, salary: Math.round(a.salary * c.poachSalaryMult * 10) / 10 };
     }
@@ -324,7 +324,7 @@ function settleBrokenPromises(state: GameState, endedYear: number): GameState {
     news.push({
       stamp: state.clock,
       kind: "market",
-      text: `${p.directorName.toUpperCase()} STILL WAITING ON “${p.scriptTitle.toUpperCase()}” — “${state.studio.name.toUpperCase()}'S WORD IS WORTH THE PAPER,” SAYS THEIR AGENT`,
+      text: `${p.directorName.toUpperCase()} STILL WAITING ON “${p.scriptTitle.toUpperCase()}”: “${state.studio.name.toUpperCase()}'S WORD IS WORTH THE PAPER,” SAYS THEIR AGENT`,
     });
   }
   return {
@@ -354,7 +354,7 @@ function rollTrends(rng: Rng, state: GameState): GameState {
   const news: NewsItem = {
     stamp: state.clock,
     kind: "market",
-    text: `EXHIBITORS WANT ${GENRE_LABELS[hot].toUpperCase()} — AND HAVE SEEN QUITE ENOUGH ${GENRE_LABELS[cold].toUpperCase()}`,
+    text: `EXHIBITORS WANT ${GENRE_LABELS[hot].toUpperCase()}, AND HAVE SEEN QUITE ENOUGH ${GENRE_LABELS[cold].toUpperCase()}`,
   };
   return { ...state, trends: { hot, cold }, newsLog: [...state.newsLog, news] };
 }
@@ -489,7 +489,7 @@ export function advanceSeason(state: GameState): GameState {
           {
             stamp: endingSeason,
             kind: "release",
-            text: `“${released.title.toUpperCase()}” LETS THE FAITHFUL DOWN — FRANCHISE WOBBLES`,
+            text: `“${released.title.toUpperCase()}” LETS THE FAITHFUL DOWN, FRANCHISE WOBBLES`,
           },
         ];
       }
@@ -704,7 +704,7 @@ export function advanceSeason(state: GameState): GameState {
           {
             stamp: s.clock,
             kind: "studio",
-            text: `${s.studio.name.toUpperCase()} SELLS ITS LIBRARY TO STAY ALIVE — “A NEW CHAPTER,” INSISTS MEMO`,
+            text: `${s.studio.name.toUpperCase()} SELLS ITS LIBRARY TO STAY ALIVE: “A NEW CHAPTER,” INSISTS MEMO`,
           },
         ],
       };

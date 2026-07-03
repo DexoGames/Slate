@@ -138,13 +138,13 @@ function ScriptCard({
             <b className={styles.trendHot} title="The market wants this right now">▲</b>
           )}
           {trend === "cold" && (
-            <b className={styles.trendCold} title="The market is tired of this — cheaper, weaker openings">▼</b>
+            <b className={styles.trendCold} title="The market is tired of this: cheaper, weaker openings">▼</b>
           )}
         </span>
         {promisedBy !== undefined ? (
           <span
             className={styles.promised}
-            title={`You promised ${script.writerName} a greenlight by the end of year ${promisedBy} — break it and the town hears`}
+            title={`You promised ${script.writerName} a greenlight by the end of year ${promisedBy}. Break it and word gets around.`}
           >
             OWED · Y{promisedBy}
           </span>
@@ -161,14 +161,14 @@ function ScriptCard({
       </GenreTitle>
       <p className={styles.logline}>{script.logline}</p>
       <div className={styles.axes}>
-        <div className={styles.axis} title="Hook — commercial concept strength">
+        <div className={styles.axis} title="Hook: how commercial the idea is">
           <IconCrowd size={12} />
           <div className={styles.track}>
             <div style={{ width: `${script.hook}%`, background: "var(--stat-crowd)" }} />
           </div>
           <b>{script.hook}</b>
         </div>
-        <div className={styles.axis} title="Ambition — thematic depth. Money can't buy this.">
+        <div className={styles.axis} title="Ambition: how far the script reaches">
           <IconCritic size={12} />
           <div className={styles.track}>
             <div style={{ width: `${script.ambition}%`, background: "var(--stat-critic)" }} />

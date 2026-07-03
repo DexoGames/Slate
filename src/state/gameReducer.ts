@@ -278,7 +278,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
             {
               stamp: s.clock,
               kind: "market",
-              text: `${director.name.toUpperCase()} TAKES THE SEQUEL — AND ${s.studio.name.toUpperCase()} OWES THEM ONE WEIRD MOVIE`,
+              text: `${director.name.toUpperCase()} TAKES THE SEQUEL, AND ${s.studio.name.toUpperCase()} OWES THEM ONE WEIRD MOVIE`,
             },
           ],
         };
@@ -390,7 +390,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
             {
               stamp: s.clock,
               kind: "studio",
-              text: `${s.studio.name.toUpperCase()} ACTUALLY GREENLIGHTS “${film.title.toUpperCase()}” — TOWN ASTONISHED A PROMISE GOT KEPT`,
+              text: `${s.studio.name.toUpperCase()} ACTUALLY GREENLIGHTS “${film.title.toUpperCase()}”: TOWN ASTONISHED A PROMISE GOT KEPT`,
             },
           ],
         };
@@ -641,7 +641,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
           {
             stamp: s.clock,
             kind: "market",
-            text: `${s.studio.name.toUpperCase()} ACQUIRES “${listing.ip.name.toUpperCase()}” RIGHTS — FANS IMMEDIATELY SUSPICIOUS`,
+            text: `${s.studio.name.toUpperCase()} ACQUIRES “${listing.ip.name.toUpperCase()}” RIGHTS, FANS IMMEDIATELY SUSPICIOUS`,
           },
         ],
       };

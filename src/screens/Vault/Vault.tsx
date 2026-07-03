@@ -153,7 +153,7 @@ function LegacyDot({ film, year }: { film: Film; year: number }) {
     <span
       className={cx(styles.dot, styles.dotPending)}
       style={{ borderColor: "var(--stat-legacy)" }}
-      title={`Legacy resolving — locks in ${yearsLeft} year${yearsLeft === 1 ? "" : "s"}`}
+      title={`Legacy resolving, locks in ${yearsLeft} year${yearsLeft === 1 ? "" : "s"}`}
     />
   );
 }

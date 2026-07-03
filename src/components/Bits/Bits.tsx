@@ -85,7 +85,7 @@ export function BandBar({
   const lo = p(est - band);
   const hi = p(est + band);
   return (
-    <div className={styles.bar} title={hint ?? `${label} — the town's estimate`}>
+    <div className={styles.bar} title={hint ?? `${label}, as the town estimates it`}>
       <span className={styles.barLabel}>
         {icon}
         {label}

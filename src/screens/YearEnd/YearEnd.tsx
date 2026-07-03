@@ -24,7 +24,7 @@ export function YearEnd({ game, onDone }: { game: GameState; onDone: () => void 
               <div key={c.name} className={cx(styles.category, c.playerWon && styles.won)}>
                 <span className={styles.catName}>{c.name}</span>
                 <span className={styles.winner}>
-                  “{c.winner.filmTitle}” — {c.winner.studio}
+                  “{c.winner.filmTitle}” · {c.winner.studio}
                   {c.playerWon && <b> · YOURS</b>}
                 </span>
                 <span className={styles.nominees}>

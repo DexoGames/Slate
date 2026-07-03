@@ -26,7 +26,7 @@ export function Hud({
       </button>
       <div className={styles.studio}>
         {studio.name}
-        <em className={styles.brand} title="Your brand — what the town thinks you're for">
+        <em className={styles.brand} title="Your brand">
           {studioBrand(game).label}
         </em>
       </div>
@@ -47,7 +47,7 @@ export function Hud({
         <button
           className={cx(styles.stat, styles.legacy)}
           onClick={onVault}
-          title="Legacy points — opens the Vault"
+          title="Legacy points (opens the Vault)"
         >
           <IconLegacy size={14} />
           {studio.legacyPoints}

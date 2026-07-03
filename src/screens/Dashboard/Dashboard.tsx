@@ -50,7 +50,7 @@ export function Dashboard({
         <SectionTitle>THE SLATE</SectionTitle>
         {active.length === 0 && (
           <Panel className={styles.empty}>
-            <p>Nothing in development. A studio with no films is just a very sad landlord.</p>
+            <p>Nothing in development. Time to find a script.</p>
             <Button onClick={onMarket}>
               <IconScript size={14} /> Browse the script market
             </Button>
