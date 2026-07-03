@@ -65,7 +65,7 @@ export function developSequelScript(
   return {
     id: makeId(rng, ids.counter++, "scr"),
     title: sequelTitle(rng, ip),
-    logline: generateLogline(rng),
+    logline: generateLogline(rng, ip.genre),
     genre: ip.genre,
     hook,
     ambition,
@@ -90,7 +90,7 @@ export function developPassionScript(rng: Rng, ids: { counter: number }, directo
   return {
     id: makeId(rng, ids.counter++, "scr"),
     title: generateTitle(rng, genre),
-    logline: generateLogline(rng),
+    logline: generateLogline(rng, genre),
     genre,
     hook: clamp(int(rng, 25, 50)), // nobody else would touch it
     ambition: clamp(Math.round(55 + director.vision * 0.4 + range(rng, -5, 5))),

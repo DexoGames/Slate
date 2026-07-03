@@ -1,5 +1,7 @@
 import {
   ACTION_NOUNS,
+  CHARACTER_NAMES,
+  GENRE_LOGLINES,
   HORROR_NOUNS,
   LOGLINE_GOALS,
   LOGLINE_PROTAGONISTS,
@@ -7,6 +9,7 @@ import {
   TITLE_ADJS,
   TITLE_NOUNS,
   TITLE_PLACES,
+  TITLE_SUFFIXES,
 } from "../../data/names";
 import { GENRE_NORMS, TUNING } from "../tuning";
 import type { Genre, RewritePass, Script, Writer } from "../types";
@@ -16,7 +19,7 @@ interface IdBox {
   counter: number;
 }
 
-export function generateTitle(rng: Rng, genre: Genre): string {
+function baseTitle(rng: Rng, genre: Genre): string {
   switch (genre) {
     case "action":
       return chance(rng, 0.5)
@@ -39,9 +42,26 @@ export function generateTitle(rng: Rng, genre: Genre): string {
   }
 }
 
-export function generateLogline(rng: Rng): string {
-  const p = pick(rng, LOGLINE_PROTAGONISTS);
-  const g = pick(rng, LOGLINE_GOALS);
+/**
+ * Sometimes the title is just the hero's (or villain's) name doing all the
+ * marketing, and sometimes whatever title comes out gets a tacked-on suffix
+ * — a cheap sequel-bait or genre-mismatch punchline.
+ */
+export function generateTitle(rng: Rng, genre: Genre): string {
+  const title = chance(rng, 0.2) ? pick(rng, CHARACTER_NAMES[genre]) : baseTitle(rng, genre);
+  return chance(rng, 0.15) ? `${title} ${pick(rng, TITLE_SUFFIXES)}` : title;
+}
+
+/**
+ * Every genre gets its own well-worn protagonist and well-worn fate — the
+ * market is supposed to read as shamelessly familiar. A blend occasionally
+ * borrows a beat from the sub-genre.
+ */
+export function generateLogline(rng: Rng, genre?: Genre, subGenre?: Genre): string {
+  const primary = genre ? GENRE_LOGLINES[genre] : { protagonists: LOGLINE_PROTAGONISTS, goals: LOGLINE_GOALS };
+  const secondary = subGenre ? GENRE_LOGLINES[subGenre] : undefined;
+  const p = secondary && chance(rng, 0.35) ? pick(rng, secondary.protagonists) : pick(rng, primary.protagonists);
+  const g = secondary && chance(rng, 0.35) ? pick(rng, secondary.goals) : pick(rng, primary.goals);
   return `${p.charAt(0).toUpperCase()}${p.slice(1)} ${g}.`;
 }
 
@@ -113,7 +133,7 @@ export function generateScript(
   return {
     id: makeId(rng, ids.counter++, "scr"),
     title: generateTitle(rng, g),
-    logline: generateLogline(rng),
+    logline: generateLogline(rng, g, subGenre),
     genre: g,
     subGenre,
     hook,
