@@ -9,10 +9,19 @@ import type { Film, GameState } from "../../engine/types";
 import { filmVision } from "../../engine/vision";
 import { IconCritic, IconCrowd, IconLegacy, IconLock, IconMoney, IconTrophy } from "../../icons";
 import { fmtMoney } from "../../lib/format";
+import { genreColor } from "../../lib/genreColor";
 import { cx } from "../../lib/cx";
 import styles from "./Vault.module.css";
 
-export function Vault({ game, onBack }: { game: GameState; onBack: () => void }) {
+export function Vault({
+  game,
+  onBack,
+  onDevelopSequel,
+}: {
+  game: GameState;
+  onBack: () => void;
+  onDevelopSequel: (franchiseId: string) => void;
+}) {
   const [openId, setOpenId] = useState<string | null>(null);
   const released = game.studio.filmIds
     .map((id) => game.films[id])
@@ -29,6 +38,33 @@ export function Vault({ game, onBack }: { game: GameState; onBack: () => void })
           ← Slate
         </Button>
       </div>
+      {game.studio.franchises.length > 0 && (
+        <Panel className={styles.franchises}>
+          <SectionTitle>FRANCHISES</SectionTitle>
+          <div className={styles.ipGrid}>
+            {game.studio.franchises.map((ip) => (
+              <div key={ip.id} className={styles.ip}>
+                <b className={styles.ipName} style={{ color: genreColor(ip.genre) }}>
+                  {ip.name}
+                </b>
+                <span className={styles.ipMeta}>
+                  {ip.kind === "original-hit" ? `${ip.instalments.length} film${ip.instalments.length === 1 ? "" : "s"}` : ip.kind}
+                </span>
+                <IpBar label="AWARENESS" value={ip.awareness} color="var(--stat-money)" />
+                <IpBar label="EXPECTATION" value={ip.expectation} color="var(--stat-crowd)" />
+                <IpBar label="FATIGUE" value={ip.fatigue} color="var(--danger)" />
+                <Button
+                  variant="secondary"
+                  onClick={() => onDevelopSequel(ip.id)}
+                  disabled={game.studio.cash < TUNING.franchise.sequelScriptCost - 25}
+                >
+                  DEVELOP INSTALMENT · {fmtMoney(TUNING.franchise.sequelScriptCost)}
+                </Button>
+              </div>
+            ))}
+          </div>
+        </Panel>
+      )}
       {released.length === 0 && (
         <Panel>
           <p className={styles.empty}>Nothing released yet. The shelf waits.</p>
@@ -44,7 +80,8 @@ export function Vault({ game, onBack }: { game: GameState; onBack: () => void })
               onClick={() => setOpenId(f.id)}
             >
               <span className={styles.year}>
-                ’{String(f.release?.season.year ?? 0).padStart(2, "0")} · {GENRE_LABELS[f.genre].toUpperCase()}
+                ’{String(f.release?.season.year ?? 0).padStart(2, "0")} ·{" "}
+                <b style={{ color: genreColor(f.genre) }}>{GENRE_LABELS[f.genre].toUpperCase()}</b>
               </span>
               <span className={styles.posterTitle}>{f.title}</span>
               {f.awards.length > 0 && (
@@ -64,6 +101,18 @@ export function Vault({ game, onBack }: { game: GameState; onBack: () => void })
         })}
       </div>
       {open && <PostMortem film={open} year={game.clock.year} onClose={() => setOpenId(null)} />}
+    </div>
+  );
+}
+
+function IpBar({ label, value, color }: { label: string; value: number; color: string }) {
+  return (
+    <div className={styles.ipBar}>
+      <span>{label}</span>
+      <div className={styles.ipTrack}>
+        <div style={{ width: `${value}%`, background: color }} />
+      </div>
+      <b>{Math.round(value)}</b>
     </div>
   );
 }

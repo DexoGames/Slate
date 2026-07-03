@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import type { AxisEstimate } from "../../engine/distribution";
 import { cx } from "../../lib/cx";
 import styles from "./RangeBar.module.css";
 
@@ -8,11 +9,9 @@ export interface RangeBarProps {
   /** CSS colour for this axis (a var() reference) */
   color: string;
   domain: [number, number];
-  floor: number;
-  expected: number;
-  ceiling: number;
+  value: AxisEstimate;
   /** previous values, rendered as a ghost for decision diffing */
-  ghost?: { floor: number; expected: number; ceiling: number } | null;
+  ghost?: AxisEstimate | null;
   format?: (n: number) => string;
   /** dashed & dimmed, e.g. an ineligible legacy bar */
   dead?: boolean;
@@ -20,18 +19,16 @@ export interface RangeBarProps {
 }
 
 /**
- * The signature UI element: a horizontal outcome-range bar. The box spans
- * floor→ceiling, the tick marks the expected value; toggling any decision
- * visibly widens/narrows the box against a ghost of the previous state.
+ * The forecast bar: a box plot. Whisker min→max, solid box q1→q3, tick at the
+ * median. Toggling any decision visibly reshapes it against a ghost of the
+ * previous state — the cost of every choice is felt, not read.
  */
 export function RangeBar({
   label,
   icon,
   color,
   domain,
-  floor,
-  expected,
-  ceiling,
+  value,
   ghost,
   format,
   dead,
@@ -54,29 +51,35 @@ export function RangeBar({
           {dead ? (
             <span className={styles.deadLabel}>{deadLabel ?? "INELIGIBLE"}</span>
           ) : (
-            <span className={styles.values}>
-              {fmt(floor)} <em>· {fmt(expected)} ·</em> {fmt(ceiling)}
+            <span className={styles.values} title="min · lower quartile · median · upper quartile · max">
+              {fmt(value.min)} · {fmt(value.q1)} <em>· {fmt(value.median)} ·</em> {fmt(value.q3)} · {fmt(value.max)}
             </span>
           )}
         </div>
         <div className={styles.track}>
           {ghost && !dead && (
-            <div
-              className={styles.ghost}
-              style={{ left: pct(ghost.floor), width: width(ghost.floor, ghost.ceiling) }}
-            />
+            <>
+              <div
+                className={styles.ghostWhisker}
+                style={{ left: pct(ghost.min), width: width(ghost.min, ghost.max) }}
+              />
+              <div
+                className={styles.ghost}
+                style={{ left: pct(ghost.q1), width: width(ghost.q1, ghost.q3) }}
+              />
+            </>
           )}
           {!dead && (
             <>
               <div
-                className={styles.box}
-                style={{
-                  left: pct(floor),
-                  width: width(floor, ceiling),
-                  background: color,
-                }}
+                className={styles.whisker}
+                style={{ left: pct(value.min), width: width(value.min, value.max), background: color }}
               />
-              <div className={styles.tick} style={{ left: pct(expected) }} />
+              <div
+                className={styles.box}
+                style={{ left: pct(value.q1), width: width(value.q1, value.q3), background: color }}
+              />
+              <div className={styles.tick} style={{ left: pct(value.median) }} />
             </>
           )}
           {dead && <div className={styles.deadline} />}

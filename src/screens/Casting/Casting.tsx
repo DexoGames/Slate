@@ -2,9 +2,14 @@ import { useMemo, useState } from "react";
 import { TRAIT_LABELS } from "../../data/archetypes";
 import { DualBar, Panel, SectionTitle, StatChip } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
+import { Commitments } from "../../components/Commitments/Commitments";
 import { DistributionPanel } from "../../components/DistributionPanel/DistributionPanel";
+import { canAfford } from "../../engine/economy";
 import { estimateOutcomes } from "../../engine/distribution";
-import { makeCastSlot } from "../../engine/negotiation";
+import { franchiseOf } from "../../engine/franchise";
+import { castChemistry, makeCastSlot } from "../../engine/negotiation";
+import { careerPhase } from "../../engine/generate/people";
+import { perceivedDirector } from "../../engine/perception";
 import { directorOf } from "../../engine/season";
 import { GENRE_LABELS } from "../../engine/tuning";
 import type { CastRole, CastSlot, Film, GameState } from "../../engine/types";
@@ -23,11 +28,12 @@ export function Casting({
 }: {
   game: GameState;
   film: Film;
-  onCast: (cast: CastSlot[]) => void;
+  onCast: (cast: CastSlot[], contractActorIds: string[]) => void;
   onBack: () => void;
 }) {
   const [picks, setPicks] = useState<Record<string, CastRole>>({});
   const [backendPct, setBackendPct] = useState<Record<string, number>>({});
+  const [contractIds, setContractIds] = useState<Set<string>>(new Set());
 
   const attachedDemand = film.demands.find(
     (d) => d.granted && d.demand.kind === "attached-actor",
@@ -43,11 +49,16 @@ export function Casting({
       .filter((c): c is CastSlot => c !== null);
   }, [picks, backendPct, game.market.actors, film]);
 
-  const draft: Film = useMemo(() => ({ ...film, cast }), [film, cast]);
-  const director = directorOf(game, film);
+  // chemistry reveals itself once two names are on the call sheet
+  const chemistry = useMemo(() => castChemistry(game.seed, cast), [game.seed, cast]);
+  const draft: Film = useMemo(
+    () => ({ ...film, cast, castChemistry: chemistry }),
+    [film, cast, chemistry],
+  );
+  const director = perceivedDirector(game, directorOf(game, film));
   const estimate = useMemo(
-    () => estimateOutcomes(draft, director, game.rivals),
-    [draft, director, game.rivals],
+    () => estimateOutcomes(draft, director, game.rivals, game.trends, franchiseOf(game, film)),
+    [draft, director, game, film],
   );
 
   const totalSalary = cast.reduce((s, c) => s + c.deal.salary, 0);
@@ -69,11 +80,6 @@ export function Casting({
             ← Film
           </Button>
         </div>
-        <p className={styles.hint}>
-          <b style={{ color: "var(--stat-money)" }}>APPEAL</b> sells tickets no matter
-          what's on screen. <b style={{ color: "var(--stat-critic)" }}>CRAFT</b> is what
-          critics remember. Almost nobody has both — those who do know what they're worth.
-        </p>
         {attachedDemand && !attachedSatisfied && (
           <Panel tone="danger" className={styles.warn}>
             You promised {game.market.actors.find((a) => a.id === attachedDemand)?.name ?? "someone"} a
@@ -93,18 +99,34 @@ export function Casting({
                     <h4 className={styles.name}>
                       {a.name}
                       {isAttached && <span className={styles.attached}> · ATTACHED</span>}
+                      {game.studio.contracts[a.id] && (
+                        <span className={styles.attached}> · UNDER CONTRACT</span>
+                      )}
                     </h4>
                     <span className={styles.arch}>{a.archetype}</span>
                   </div>
-                  <span className={styles.salary}>{fmtMoney(a.salary)}</span>
+                  <span className={styles.salary}>
+                    {fmtMoney(game.studio.contracts[a.id]?.salary ?? a.salary)}
+                  </span>
                 </div>
                 <DualBar a={a.appeal} b={a.craft} aLabel="Appeal" bLabel="Craft" />
                 <div className={styles.metaRow}>
                   <span className={styles.typecast}>
                     {a.typecast.map((g) => GENRE_LABELS[g]).join(" · ")}
                   </span>
+                  <span className={styles.fanChip} title={`Fanbase: ${a.fanbase} · career: ${careerPhase(a)}`}>
+                    {a.fanbase.toUpperCase()} · {careerPhase(a).toUpperCase()}
+                  </span>
+                </div>
+                <div className={styles.metaRow}>
+                  <span className={styles.rangeChip} title="Range — how well they play against type">
+                    RANGE {a.range}
+                  </span>
                   {against && (
-                    <span className={styles.against} title="Against type: wider acclaim outcomes">
+                    <span
+                      className={styles.against}
+                      title={`Against type: wider outcomes; payoff scales with range (${a.range})`}
+                    >
                       <IconDice size={11} /> AGAINST TYPE
                     </span>
                   )}
@@ -120,6 +142,21 @@ export function Casting({
                 )}
                 {picked ? (
                   <>
+                    {!game.studio.contracts[a.id] && (
+                      <label className={styles.contract}>
+                        <input
+                          type="checkbox"
+                          checked={contractIds.has(a.id)}
+                          onChange={(e) => {
+                            const next = new Set(contractIds);
+                            if (e.target.checked) next.add(a.id);
+                            else next.delete(a.id);
+                            setContractIds(next);
+                          }}
+                        />
+                        2-FILM DEAL · −10% now, rate locked, rivals locked out
+                      </label>
+                    )}
                     <div className={styles.dealRow}>
                       <span className={styles.dealLabel}>
                         <IconHandshake size={12} /> DEAL
@@ -163,7 +200,7 @@ export function Casting({
                       <button
                         key={role}
                         className={styles.roleBtn}
-                        disabled={roleTaken(role) || game.studio.cash < totalSalary + a.salary}
+                        disabled={roleTaken(role) || !canAfford(game, totalSalary + a.salary)}
                         onClick={() => setPicks({ ...picks, [a.id]: role })}
                       >
                         {role.toUpperCase()}
@@ -182,9 +219,18 @@ export function Casting({
             label="total salaries"
             color="var(--stat-money)"
           />
+          {cast.length >= 2 && (
+            <StatChip
+              icon={<IconHandshake size={13} />}
+              value={chemistry > 0 ? `+${chemistry}` : chemistry}
+              label="chemistry"
+              color={chemistry >= 0 ? "var(--stat-money)" : "var(--danger)"}
+              title="How these people read together on screen — you only learn it once they're cast"
+            />
+          )}
           <Button
-            onClick={() => onCast(cast)}
-            disabled={!hasLead || !attachedSatisfied || game.studio.cash < totalSalary}
+            onClick={() => onCast(cast, [...contractIds])}
+            disabled={!hasLead || !attachedSatisfied || !canAfford(game, totalSalary)}
           >
             LOCK THE CAST ({cast.length})
           </Button>
@@ -192,6 +238,7 @@ export function Casting({
       </div>
       <div className={styles.right}>
         <DistributionPanel estimate={estimate} />
+        <Commitments game={game} film={draft} overrides={{ extraTalent: totalSalary }} />
       </div>
     </div>
   );

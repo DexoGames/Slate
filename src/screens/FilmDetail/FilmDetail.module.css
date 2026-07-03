@@ -27,6 +27,15 @@
     gap: 12px;
 }
 
+.headerLeft {
+    min-width: 0;
+}
+
+.headerPips {
+    max-width: 280px;
+    margin-top: 6px;
+}
+
 .genre {
     font-size: 0.6rem;
     font-weight: 700;
@@ -221,6 +230,15 @@
     color: var(--orange);
 }
 
+.greenlightProjection {
+    font-size: 0.62rem;
+    color: var(--bone-dim);
+}
+
+.projectionWarn {
+    color: var(--danger);
+}
+
 .abandon {
     align-self: flex-start;
     background: none;
@@ -386,6 +404,51 @@
 
 .statusLine {
     font-size: 0.8rem;
+}
+
+.hypeRow {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.hypeLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--orange);
+    white-space: nowrap;
+}
+
+.hypeBar {
+    flex: 1;
+    height: 8px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-on-black);
+    display: block;
+}
+
+.hypeBar i {
+    display: block;
+    height: 100%;
+    background: var(--orange);
+    transition: width 0.25s ease;
+}
+
+.hypeNote {
+    font-size: 0.58rem;
+    color: var(--bone-dim);
+    white-space: nowrap;
+}
+
+.festivalLine {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--gold);
 }
 
 .eventLog {

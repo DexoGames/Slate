@@ -46,6 +46,32 @@ export function generateLogline(rng: Rng): string {
 }
 
 /**
+ * Notable genre blends and what they do to a script. Key is "a+b" sorted.
+ * Unlisted combos read as shelf-less oddities: a small hook penalty.
+ */
+const COMBOS: Record<string, { hook?: number; ambition?: number; sigma?: number }> = {
+  "comedy+horror": { hook: 8, sigma: 3 },
+  "romance+scifi": { ambition: 10, hook: -4, sigma: 2 },
+  "action+comedy": { hook: 6 },
+  "comedy+crime": { hook: 5, ambition: 4 },
+  "horror+scifi": { hook: 4 },
+  "drama+musical": { ambition: 6 },
+  "romance+war": { ambition: 5 },
+  "romance+thriller": { hook: 3, sigma: 2 },
+  "crime+thriller": { hook: 4 },
+  "drama+scifi": { ambition: 8, sigma: 2 },
+  "family+scifi": { hook: 5 },
+  "action+horror": { hook: 4, sigma: 3 },
+};
+
+export function comboEffects(a: Genre, b: Genre): { hook: number; ambition: number; sigma: number } {
+  const key = [a, b].sort().join("+");
+  const c = COMBOS[key];
+  if (!c) return { hook: -4, ambition: 0, sigma: 1 }; // audiences need a shelf
+  return { hook: c.hook ?? 0, ambition: c.ambition ?? 0, sigma: c.sigma ?? 0 };
+}
+
+/**
  * hook and ambition are drawn anti-correlated (ρ ≈ −0.35): crowd-pleasing
  * concepts and thematic depth rarely arrive in the same draft.
  */
@@ -61,22 +87,35 @@ export function generateScript(
       ? (pick(rng, Object.keys(writer.genres) as Genre[]) as Genre)
       : pick(rng, Object.keys(GENRE_NORMS) as Genre[]));
   const norm = GENRE_NORMS[g];
+  // ~35% of scripts are blends
+  let subGenre: Genre | undefined;
+  if (chance(rng, 0.35)) {
+    const others = (Object.keys(GENRE_NORMS) as Genre[]).filter((x) => x !== g);
+    subGenre = pick(rng, others);
+  }
+  const combo = subGenre ? comboEffects(g, subGenre) : { hook: 0, ambition: 0, sigma: 0 };
   const [zH, zA] = correlatedPair(rng, -0.35);
   const genreSkill = writer.genres[g] ?? 40;
-  const hook = clamp(Math.round(50 + zH * 16 + (genreSkill - 50) * 0.2));
-  const ambitionRaw = 30 + zA * 16 + writer.ambitionStat * 0.4;
-  const ambition = clamp(Math.round(Math.min(ambitionRaw, norm.ambitionCap)));
+  const hook = clamp(Math.round(50 + zH * 16 + (genreSkill - 50) * 0.2 + combo.hook));
+  const ambitionCap = subGenre
+    ? Math.max(norm.ambitionCap, GENRE_NORMS[subGenre].ambitionCap)
+    : norm.ambitionCap;
+  const ambitionRaw = 30 + zA * 16 + writer.ambitionStat * 0.4 + combo.ambition;
+  const ambition = clamp(Math.round(Math.min(ambitionRaw, ambitionCap)));
   const coherence = clamp(Math.round(40 + writer.craft * 0.5 + range(rng, -8, 8)));
   const buzz = clamp(
     Math.round(hook * 0.5 + writer.fame * 0.3 + writer.heat + range(rng, -10, 10)),
   );
-  const askingPrice =
-    Math.round((0.5 + (buzz / 100) * 2.5 + (writer.fame / 100) * 1.5) * 10) / 10;
+  const askingPrice = Math.min(
+    3.5,
+    Math.round((0.5 + (buzz / 100) * 2 + (writer.fame / 100) * 1) * 10) / 10,
+  );
   return {
     id: makeId(rng, ids.counter++, "scr"),
     title: generateTitle(rng, g),
     logline: generateLogline(rng),
     genre: g,
+    subGenre,
     hook,
     ambition,
     coherence,

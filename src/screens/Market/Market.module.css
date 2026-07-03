@@ -11,10 +11,47 @@
     gap: 12px;
 }
 
-.card {
+.ipRow {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.ipCard {
     display: flex;
     flex-direction: column;
     gap: 8px;
+}
+
+.ipKind {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--orange);
+}
+
+.ipStats {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--bone-dim);
+}
+
+.card {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.genreStripe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
 }
 
 .topRow {
@@ -33,6 +70,16 @@
     color: var(--bone-dim);
 }
 
+.trendHot {
+    color: var(--stat-money);
+    cursor: help;
+}
+
+.trendCold {
+    color: var(--danger);
+    cursor: help;
+}
+
 .hot {
     display: inline-flex;
     align-items: center;
@@ -42,6 +89,19 @@
     letter-spacing: 0.1em;
     color: var(--orange);
     animation: flicker 1.4s ease infinite;
+}
+
+/* a passion project you owe someone — the debt is part of the card */
+.promised {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--stat-legacy);
+    border: 1px solid var(--stat-legacy);
+    padding: 1px 5px;
+    cursor: help;
 }
 
 @keyframes flicker {
@@ -114,8 +174,25 @@
     letter-spacing: 0.08em;
 }
 
-.buy {
+.buyRow {
     margin-top: auto;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.allIn {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--bone-dim);
+    cursor: help;
+}
+
+.buy {
+    flex: 1;
+    max-width: 140px;
 }
 
 .empty {

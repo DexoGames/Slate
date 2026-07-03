@@ -7,3 +7,45 @@
     margin: 0 auto;
     padding: calc(var(--hud-h) + 20px) clamp(16px, 3.5vw, 40px) 60px;
 }
+
+.interstitial {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--black);
+    animation: wipe 0.7s ease forwards;
+    pointer-events: all;
+}
+
+.interstitial span {
+    font-family: var(--font-display);
+    font-size: clamp(2rem, 8vw, 4rem);
+    color: var(--bone);
+    border-bottom: 4px solid var(--orange);
+    padding-bottom: 8px;
+}
+
+@keyframes wipe {
+    0% {
+        clip-path: inset(0 100% 0 0);
+        opacity: 1;
+    }
+
+    18% {
+        clip-path: inset(0 0 0 0);
+        opacity: 1;
+    }
+
+    75% {
+        clip-path: inset(0 0 0 0);
+        opacity: 1;
+    }
+
+    100% {
+        clip-path: inset(0 0 0 100%);
+        opacity: 1;
+    }
+}

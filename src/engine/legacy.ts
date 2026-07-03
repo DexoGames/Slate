@@ -1,5 +1,5 @@
 import { TUNING } from "./tuning";
-import type { Director, Film, LegacyEvent, LegacyState } from "./types";
+import type { Director, Film, FranchiseIP, LegacyEvent, LegacyState } from "./types";
 import { chance, clamp, normal, pick, range, type Rng } from "./rng";
 import { filmVision, legacyGate } from "./vision";
 
@@ -12,6 +12,7 @@ export function seedLegacy(
   film: Film,
   director: Director,
   releasedYear: number,
+  franchise?: FranchiseIP,
 ): LegacyState {
   const t = TUNING;
   const vp = filmVision(film);
@@ -20,12 +21,25 @@ export function seedLegacy(
   const result = film.result;
   const critic = result?.criticScore ?? 50;
   const crowd = result?.crowdScore ?? 50;
+  // granted "argue about the ending" demands are deliberate divisiveness,
+  // and a festival dust-up is legacy fuel of the same species
+  const demandDivisive =
+    film.demands.reduce(
+      (s, d) => s + (d.granted ? d.demand.effects?.divisive ?? 0 : 0),
+      0,
+    ) + (film.festival === "divisive" ? t.festival.divisiveDivisive : 0);
   const divisiveness =
-    (Math.min(t.divisivenessCap, Math.abs(critic - crowd)) / t.divisivenessCap) * 100;
+    (Math.min(t.divisivenessCap, Math.abs(critic - crowd) + demandDivisive) /
+      t.divisivenessCap) *
+    100;
 
+  // sequels rarely become classics — unless they surpass the original
+  const worthySuccessor = franchise ? critic >= franchise.expectation : true;
+  const franchiseMult = franchise && !worthySuccessor ? t.franchise.legacySeedMult : 1;
   const seed = eligible
     ? clamp(
         legacyGate(vp) *
+          franchiseMult *
           (t.legacySeed.a * A +
             t.legacySeed.e * E +
             t.legacySeed.critic * critic +

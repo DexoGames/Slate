@@ -1,0 +1,76 @@
+.strip {
+    display: flex;
+    align-items: flex-start;
+    gap: 4px;
+}
+
+.step {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+}
+
+.pip {
+    display: block;
+    height: 5px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-on-black);
+    transition: background 0.4s ease;
+}
+
+.done {
+    background: var(--bone-dim);
+    border-color: var(--bone-dim);
+}
+
+.current {
+    background: var(--orange);
+    border-color: var(--orange);
+    animation: pipIn 0.4s ease;
+}
+
+@keyframes pipIn {
+    from {
+        transform: scaleX(0);
+        transform-origin: left;
+    }
+
+    to {
+        transform: scaleX(1);
+    }
+}
+
+.needs {
+    animation: needPulse 1.4s ease infinite;
+}
+
+@keyframes needPulse {
+    50% {
+        opacity: 0.4;
+    }
+}
+
+.label {
+    font-style: normal;
+    font-size: 0.46rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--bone-dim);
+    opacity: 0.55;
+    white-space: nowrap;
+}
+
+.labelOn {
+    opacity: 1;
+    color: var(--orange);
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .current,
+    .needs {
+        animation: none;
+    }
+}

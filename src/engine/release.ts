@@ -1,7 +1,10 @@
+import { comboEffects } from "./generate/scripts";
 import { GENRE_NORMS, TUNING } from "./tuning";
 import type {
   Director,
   Film,
+  FranchiseIP,
+  GenreTrends,
   ReleaseResult,
   RivalStudio,
   RollBreakdown,
@@ -9,6 +12,64 @@ import type {
   Verdict,
 } from "./types";
 import { clamp, lognormalFactor, normal, type Rng } from "./rng";
+
+/** the money-facing profile of a cast: fanbase-weighted appeal + leg/stream shifts */
+export interface CastProfile {
+  castAppeal: number;
+  legsMult: number;
+  streamMult: number;
+  criticBonus: number;
+}
+
+export function castMoneyProfile(film: Film): CastProfile {
+  const t = TUNING;
+  let castAppeal = 0;
+  let legsMult = 1;
+  let streamMult = 1;
+  let criticBonus = 0;
+  for (const c of film.cast) {
+    const w = c.role === "lead" ? 0.6 : c.role === "colead" ? 0.25 : 0.075;
+    const fb = t.fanbase[c.fanbase];
+    const factor = c.againstType ? fb.outType : fb.inType;
+    castAppeal += c.appeal * factor * w;
+    if (c.role === "lead") {
+      if (c.fanbase === "arthouse") criticBonus += t.arthouseLeadCriticBonus;
+      if (c.fanbase === "teen") legsMult *= t.teenLegsPenalty;
+      if (c.fanbase === "nostalgia") {
+        legsMult *= t.nostalgiaLegsBonus;
+        streamMult *= t.nostalgiaStreamBonus;
+      }
+    }
+  }
+  if (film.cast.length === 0) castAppeal = 40;
+  return { castAppeal, legsMult, streamMult, criticBonus };
+}
+
+/** the film's box-office shape: genre (blended for two-handers) + combo risk */
+export function genreShape(film: Film): {
+  sigmaMult: number;
+  legsProfile: number;
+  comboSigma: number;
+} {
+  const p = GENRE_NORMS[film.genre];
+  const sub = film.script.subGenre;
+  if (!sub) return { sigmaMult: p.sigmaMult, legsProfile: p.legsProfile, comboSigma: 0 };
+  const s = GENRE_NORMS[sub];
+  return {
+    sigmaMult: (p.sigmaMult + s.sigmaMult) / 2,
+    legsProfile: (p.legsProfile + s.legsProfile) / 2,
+    comboSigma: comboEffects(film.genre, sub).sigma,
+  };
+}
+
+/** hot genres open bigger, cold ones smaller; a blend counts either genre */
+export function trendMult(film: Film, trends: GenreTrends | undefined): number {
+  if (!trends) return 1;
+  const genres = [film.genre, film.script.subGenre].filter(Boolean);
+  if (trends.hot && genres.includes(trends.hot)) return TUNING.trend.hotMult;
+  if (trends.cold && genres.includes(trends.cold)) return TUNING.trend.coldMult;
+  return 1;
+}
 
 /**
  * Variance/ceiling budget for a film. Granting demands widens AND uncaps;
@@ -22,7 +83,11 @@ export interface Spread {
   parts: RollModifier[];
 }
 
-export function computeSpread(film: Film, director: Director): Spread {
+export function computeSpread(
+  film: Film,
+  director: Director,
+  franchise?: FranchiseIP,
+): Spread {
   const t = TUNING;
   const parts: RollModifier[] = [{ name: "Base", value: t.sigmaBase }];
   let sigma = t.sigmaBase;
@@ -33,12 +98,25 @@ export function computeSpread(film: Film, director: Director): Spread {
   const denied = majors.length - granted;
   if (granted > 0) {
     sigma += granted * t.sigmaPerMajorDemand;
-    ceiling += granted * t.ceilingPerDemand;
+    // the hidden truth: ceiling gains scale with the director's TRUE craft.
+    // final cut in a master's hands buys ceiling; in a hack's, only variance.
+    ceiling += granted * t.ceilingPerDemand * (director.craft / t.ceilingCraftPivot);
     parts.push({ name: "Demands granted", value: granted * t.sigmaPerMajorDemand });
   }
   if (denied > 0) {
     ceiling -= denied * t.ceilingPerDemand;
-    parts.push({ name: "Demands denied (capped)", value: 0 });
+    sigma += denied * t.sigmaPerDeniedMajor;
+    parts.push({ name: "Demands denied (narrowed, capped)", value: denied * t.sigmaPerDeniedMajor });
+  }
+
+  // bespoke effects from granted craft demands
+  let effectSigma = 0;
+  for (const d of film.demands) {
+    if (d.granted && d.demand.effects?.sigma) effectSigma += d.demand.effects.sigma;
+  }
+  if (effectSigma !== 0) {
+    sigma += effectSigma;
+    parts.push({ name: "Creative risks", value: effectSigma });
   }
 
   const vol = (director.volatility / 100) * t.sigmaVolatilityMax;
@@ -55,6 +133,11 @@ export function computeSpread(film: Film, director: Director): Spread {
   if (film.eventSigma !== 0) {
     sigma += film.eventSigma;
     parts.push({ name: "Production turbulence", value: film.eventSigma });
+  }
+  const shape = genreShape(film);
+  if (shape.comboSigma !== 0) {
+    sigma += shape.comboSigma;
+    parts.push({ name: "Genre blend", value: shape.comboSigma });
   }
 
   let sigmaAcclaim = sigma;
@@ -86,9 +169,14 @@ export function computeSpread(film: Film, director: Director): Spread {
     parts.push({ name: "Platform release", value: t.sigmaPlatformMoney });
   }
 
+  // awareness IS safety: a known name narrows the money roll
+  const franchiseMult = franchise ? 1 - franchise.awareness / t.franchise.sigmaDiv : 1;
+
   return {
     sigmaAcclaim: clamp(sigmaAcclaim, t.sigmaMin, t.sigmaMax),
-    sigmaMoney: clamp(sigmaMoney, t.sigmaMin, t.sigmaMax),
+    // the genre's shape scales money risk AFTER the clamp: horror is a
+    // lottery ticket no matter how carefully you de-risk the roll
+    sigmaMoney: clamp(sigmaMoney, t.sigmaMin, t.sigmaMax) * shape.sigmaMult * franchiseMult,
     ceiling: clamp(ceiling, t.ceilingMin, t.ceilingMax),
     parts,
   };
@@ -124,11 +212,14 @@ export function rollRelease(
   film: Film,
   director: Director,
   rivals: RivalStudio[],
+  trends?: GenreTrends,
+  franchise?: FranchiseIP,
+  brandFx: { opening: number; critic: number } = { opening: 1, critic: 0 },
 ): ReleaseResult {
   const t = TUNING;
   const norm = GENRE_NORMS[film.genre];
   const { E, A, X } = film.latent ?? { E: 50, A: 40, X: 50 };
-  const spread = computeSpread(film, director);
+  const spread = computeSpread(film, director, franchise);
   const strategy = film.release?.strategy ?? "wide";
   const season = film.release?.season.season ?? 0;
   const breakdown: RollBreakdown[] = [];
@@ -138,7 +229,9 @@ export function rollRelease(
     t.crowdRoll.x * X +
     t.crowdRoll.e * E +
     t.crowdRoll.a * A -
-    t.crowdRoll.crossPenalty * Math.max(0, A - X);
+    t.crowdRoll.crossPenalty * Math.max(0, A - X) -
+    film.crowdPenalty +
+    (film.festival === "divisive" ? t.festival.divisiveCrowd : 0);
   const crowdNoise = normal(rng, 0, spread.sigmaAcclaim * t.crowdRoll.sigmaScale);
   const crowdScore = Math.round(
     clamp(crowdBase + crowdNoise, 0, spread.ceiling),
@@ -156,6 +249,8 @@ export function rollRelease(
   });
 
   // ----- critic score
+  const profile = castMoneyProfile(film);
+  const shape = genreShape(film);
   const cred = auteurCred(director);
   const fallBonus =
     season === 3
@@ -168,7 +263,10 @@ export function rollRelease(
     t.criticRoll.cred * cred * 10 -
     t.criticRoll.crossPenalty * Math.max(0, X - A) +
     fallBonus +
-    platformBonus;
+    platformBonus +
+    profile.criticBonus +
+    brandFx.critic +
+    (film.festival === "golden" ? t.festival.goldenCritic : 0);
   const criticNoise = normal(rng, 0, spread.sigmaAcclaim);
   const criticScore = Math.round(
     clamp(criticBase + criticNoise, 0, spread.ceiling),
@@ -214,16 +312,16 @@ export function rollRelease(
     };
   }
 
-  const castAppeal =
-    film.cast.reduce(
-      (s, c) => s + c.appeal * (c.role === "lead" ? 0.6 : c.role === "colead" ? 0.25 : 0.075),
-      0,
-    ) || 40;
+  const castAppeal = profile.castAppeal;
   const appealMult = t.appealMult.base + (castAppeal / 100) * t.appealMult.scale;
+  // P&A goes further on a name people already know
+  const effMarketing = franchise
+    ? film.marketing / t.franchise.marketingEff
+    : film.marketing;
   const marketingMult = Math.min(
     t.marketingMult.cap,
     t.marketingMult.base +
-      t.marketingMult.scale * Math.sqrt(film.marketing / (0.5 * film.budget)),
+      t.marketingMult.scale * Math.sqrt(effMarketing / (0.5 * film.budget)),
   );
   const focusBonus = film.deRisking.focusMarketing ? 1.05 : 1;
   const seasonMult = t.seasonMult[season];
@@ -232,6 +330,13 @@ export function rollRelease(
   const budgetScale = (film.budget / norm.budget) ** t.budgetExponent;
   const noise = lognormalFactor(rng, spread.sigmaMoney / t.moneySigmaDiv);
 
+  const tMult = trendMult(film, trends);
+  const franchiseOpen = franchise
+    ? (1 + (franchise.awareness / 100) * t.franchise.openingBoost) *
+      (1 - franchise.fatigue / t.franchise.fatigueOpeningDiv)
+    : 1;
+  // hype sells tickets…
+  const hypeMult = t.hype.openingBase + film.hype / t.hype.openingDiv;
   let opening =
     norm.opening *
     budgetScale *
@@ -240,17 +345,38 @@ export function rollRelease(
     focusBonus *
     seasonMult *
     competitionMult *
+    tMult *
+    franchiseOpen *
+    hypeMult *
+    brandFx.opening *
     noise;
   if (strategy === "platform") {
     opening = Math.min(opening, norm.opening * t.platformOpeningCap);
   }
   opening = Math.round(opening * 10) / 10;
 
-  const legs = opening * (t.legsBase + t.legsCrowdScale * (crowdScore / 100)) *
+  // the expectation bill: a sequel that lets the fans down loses its legs
+  const expectationMiss =
+    franchise && crowdScore < franchise.expectation - t.franchise.expectationMissTol;
+  // …and sets the bar the film is judged against
+  const hypeBar = t.hype.expectationBase + film.hype / t.hype.expectationDiv;
+  const hypeMiss = crowdScore < hypeBar - t.hype.missTol;
+  const sleeper = crowdScore > hypeBar + t.hype.missTol && film.hype < t.hype.beatHypeMax;
+  const legs =
+    opening *
+    (t.legsBase + t.legsCrowdScale * (crowdScore / 100)) *
+    shape.legsProfile *
+    profile.legsMult *
+    (expectationMiss ? t.franchise.missLegsMult : 1) *
+    (hypeMiss ? t.hype.missLegsMult : sleeper ? t.hype.beatLegsMult : 1) *
     (strategy === "platform" ? 1.25 : 1);
   const boxOffice = Math.round((opening + legs) * 10) / 10;
 
-  const streamMult = GENRE_NORMS[film.genre].stream;
+  const subStream = film.script.subGenre ? GENRE_NORMS[film.script.subGenre].stream : null;
+  const streamMult =
+    (subStream !== null
+      ? (GENRE_NORMS[film.genre].stream + subStream) / 2
+      : GENRE_NORMS[film.genre].stream) * profile.streamMult;
   const streaming =
     Math.round(
       (t.streamingBase + t.streamingAppeal * castAppeal + t.streamingCrowd * crowdScore) *
@@ -279,6 +405,8 @@ export function rollRelease(
       { name: "Marketing", value: Math.round((marketingMult - 1) * 100) },
       { name: "Season window", value: Math.round((seasonMult - 1) * 100) },
       { name: "Competition", value: Math.round((competitionMult - 1) * 100) },
+      { name: "Genre trend", value: Math.round((tMult - 1) * 100) },
+      { name: "Franchise awareness", value: Math.round((franchiseOpen - 1) * 100) },
     ],
     noise: Math.round((noise - 1) * 100),
     final: opening,

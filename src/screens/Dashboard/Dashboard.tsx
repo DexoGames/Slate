@@ -1,6 +1,9 @@
 import { Panel, SectionTitle, StatChip } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
+import { StagePips } from "../../components/StagePips/StagePips";
 import { VisionMeter } from "../../components/VisionMeter/VisionMeter";
+import { creditLeft, interestDue } from "../../engine/economy";
+import { filmNeedsAction } from "../../engine/needs";
 import { productionSlots } from "../../engine/score";
 import { GENRE_LABELS, TUNING } from "../../engine/tuning";
 import type { Film, GameState } from "../../engine/types";
@@ -14,16 +17,9 @@ import {
   IconScript,
 } from "../../icons";
 import { fmtMoney, SEASON_NAMES } from "../../lib/format";
+import { genreColor } from "../../lib/genreColor";
 import { cx } from "../../lib/cx";
 import styles from "./Dashboard.module.css";
-
-const STAGE_LABEL: Record<Film["stage"], string> = {
-  development: "IN DEVELOPMENT",
-  production: "SHOOTING",
-  post: "IN POST",
-  scheduled: "SCHEDULED",
-  released: "RELEASED",
-};
 
 export function Dashboard({
   game,
@@ -39,7 +35,10 @@ export function Dashboard({
   const films = game.studio.filmIds
     .map((id) => game.films[id])
     .filter((f): f is Film => !!f);
-  const active = films.filter((f) => f.stage !== "released");
+  // films that need the player come first
+  const active = films
+    .filter((f) => f.stage !== "released")
+    .sort((a, b) => Number(!!filmNeedsAction(b)) - Number(!!filmNeedsAction(a)));
   const slots = productionSlots(game.studio.legacyPoints);
   const inFlight = active.filter((f) => f.stage !== "development").length;
   const blocked = game.pendingEvents.length > 0;
@@ -57,29 +56,38 @@ export function Dashboard({
           </Panel>
         )}
         <div className={styles.cards}>
-          {active.map((f) => (
-            <button key={f.id} className={styles.card} onClick={() => onOpenFilm(f.id)}>
-              <span className={styles.stage}>{STAGE_LABEL[f.stage]}</span>
-              <span className={styles.cardTitle}>{f.title}</span>
-              <span className={styles.meta}>
-                {GENRE_LABELS[f.genre]}
-                {f.directorName ? ` · ${f.directorName}` : " · no director"}
-              </span>
-              <div className={styles.chips}>
-                <StatChip icon={<IconMoney size={13} />} value={fmtMoney(f.budget)} color="var(--stat-money)" />
-                {f.release && (
-                  <StatChip
-                    icon={<IconCalendar size={13} />}
-                    value={`${SEASON_NAMES[f.release.season.season]} ’${String(f.release.season.year).padStart(2, "0")}`}
-                  />
-                )}
-              </div>
-              <VisionMeter value={filmVision(f)} threshold={TUNING.vpEligibleAt} />
-              <span className={styles.open}>
-                OPEN <IconChevron size={11} />
-              </span>
-            </button>
-          ))}
+          {active.map((f) => {
+            const need = filmNeedsAction(f);
+            return (
+              <button
+                key={f.id}
+                className={cx(styles.card, need && styles.cardNeeds)}
+                style={{ borderTopColor: genreColor(f.genre) }}
+                onClick={() => onOpenFilm(f.id)}
+              >
+                {need && <span className={styles.needBadge}>{need}</span>}
+                <StagePips film={f} needsAction={!!need} />
+                <span className={styles.cardTitle}>{f.title}</span>
+                <span className={styles.meta}>
+                  <b style={{ color: genreColor(f.genre) }}>{GENRE_LABELS[f.genre]}</b>
+                  {f.directorName ? ` · ${f.directorName}` : ""}
+                </span>
+                <div className={styles.chips}>
+                  <StatChip icon={<IconMoney size={13} />} value={fmtMoney(f.budget)} color="var(--stat-money)" />
+                  {f.release && (
+                    <StatChip
+                      icon={<IconCalendar size={13} />}
+                      value={`${SEASON_NAMES[f.release.season.season]} ’${String(f.release.season.year).padStart(2, "0")}`}
+                    />
+                  )}
+                </div>
+                <VisionMeter value={filmVision(f)} threshold={TUNING.vpEligibleAt} />
+                <span className={styles.open}>
+                  OPEN <IconChevron size={11} />
+                </span>
+              </button>
+            );
+          })}
           {active.length > 0 && (
             <button className={cx(styles.card, styles.newCard)} onClick={onMarket}>
               <IconScript size={22} />
@@ -98,6 +106,21 @@ export function Dashboard({
           <p className={styles.overhead}>
             Overhead {fmtMoney(TUNING.overheadPerSeason + (slots - 1) * TUNING.overheadPerExtraSlot)}/season
           </p>
+          <p className={styles.overhead}>
+            Credit left <b className={styles.creditVal}>{fmtMoney(creditLeft(game))}</b>
+            {interestDue(game) > 0 && (
+              <span className={styles.interest}> · interest −{fmtMoney(interestDue(game))}/season</span>
+            )}
+          </p>
+          {game.studio.promises.map((p) => (
+            <p
+              key={p.directorId}
+              className={cx(styles.promise, game.clock.year >= p.byYear && styles.promiseDue)}
+              title={`You owe ${p.directorName} a greenlight on “${p.scriptTitle}” by the end of year ${p.byYear}. Their script is in the market.`}
+            >
+              OWED: “{p.scriptTitle.toUpperCase()}” · BY Y{p.byYear}
+            </p>
+          ))}
           <Button className={styles.advance} onClick={onAdvance} disabled={blocked}>
             {blocked ? "RESOLVE PRODUCTION EVENTS" : `ADVANCE TO ${nextSeasonLabel(game)}`} <IconChevron size={13} />
           </Button>

@@ -1,6 +1,8 @@
 import { Panel, SectionTitle } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
+import { canAfford, scriptAllIn } from "../../engine/economy";
 import { GENRE_LABELS } from "../../engine/tuning";
+import { genreColor } from "../../lib/genreColor";
 import type { GameState, Script } from "../../engine/types";
 import { IconCritic, IconCrowd, IconFlame, IconScript, IconWriter } from "../../icons";
 import { fmtMoney } from "../../lib/format";
@@ -13,10 +15,12 @@ import styles from "./Market.module.css";
 export function Market({
   game,
   onBuy,
+  onBuyIP,
   onBack,
 }: {
   game: GameState;
   onBuy: (scriptId: string) => void;
+  onBuyIP: (ipId: string) => void;
   onBack: () => void;
 }) {
   const scripts = [...game.market.scripts].sort((a, b) => b.buzz - a.buzz);
@@ -28,13 +32,43 @@ export function Market({
           ← Slate
         </Button>
       </div>
+      {game.market.ips.length > 0 && (
+        <div className={styles.ipRow}>
+          {game.market.ips.map((l) => (
+            <Panel key={l.ip.id} className={styles.ipCard} tone="orange">
+              <span className={styles.ipKind}>
+                {l.ip.kind === "remake" ? "REMAKE RIGHTS" : "ADAPTATION RIGHTS"} ·{" "}
+                <b style={{ color: genreColor(l.ip.genre) }}>{GENRE_LABELS[l.ip.genre].toUpperCase()}</b>
+              </span>
+              <h4 className={styles.title}>{l.ip.name}</h4>
+              <p className={styles.logline}>{l.blurb}</p>
+              <span className={styles.ipStats}>
+                AWARENESS {l.ip.awareness} · FANS EXPECT {l.ip.expectation}
+                {l.ip.fatigue > 0 && ` · FATIGUE ${l.ip.fatigue}`}
+              </span>
+              <Button onClick={() => onBuyIP(l.ip.id)} disabled={!canAfford(game, l.price)}>
+                {fmtMoney(l.price)}
+              </Button>
+            </Panel>
+          ))}
+        </div>
+      )}
       <div className={styles.grid}>
         {scripts.map((s) => (
           <ScriptCard
             key={s.id}
             script={s}
-            canAfford={game.studio.cash >= s.askingPrice}
+            affordable={canAfford(game, s.askingPrice)}
+            allIn={scriptAllIn(game, s.genre, s.askingPrice)}
             hot={s.buzz >= 70}
+            trend={
+              s.genre === game.trends.hot || s.subGenre === game.trends.hot
+                ? "hot"
+                : s.genre === game.trends.cold || s.subGenre === game.trends.cold
+                  ? "cold"
+                  : null
+            }
+            promisedBy={game.studio.promises.find((p) => p.scriptId === s.id)?.byYear}
             onBuy={() => onBuy(s.id)}
           />
         ))}
@@ -52,25 +86,60 @@ export function Market({
 
 function ScriptCard({
   script,
-  canAfford,
+  affordable,
+  allIn,
   hot,
+  trend,
+  promisedBy,
   onBuy,
 }: {
   script: Script;
-  canAfford: boolean;
+  affordable: boolean;
+  allIn: number;
   hot: boolean;
+  trend: "hot" | "cold" | null;
+  /** deadline year of a passion-project promise attached to this script */
+  promisedBy?: number;
   onBuy: () => void;
 }) {
   return (
     <Panel className={styles.card}>
+      <span
+        className={styles.genreStripe}
+        style={{
+          background: script.subGenre
+            ? `linear-gradient(90deg, ${genreColor(script.genre)} 50%, ${genreColor(script.subGenre)} 50%)`
+            : genreColor(script.genre),
+        }}
+      />
       <div className={styles.topRow}>
-        <span className={styles.genre}>
+        <span className={styles.genre} style={{ color: genreColor(script.genre) }}>
           <IconScript size={12} /> {GENRE_LABELS[script.genre].toUpperCase()}
+          {script.subGenre && (
+            <em style={{ color: genreColor(script.subGenre), fontStyle: "normal" }}>
+              {" "}+ {GENRE_LABELS[script.subGenre].toUpperCase()}
+            </em>
+          )}
+          {trend === "hot" && (
+            <b className={styles.trendHot} title="The market wants this right now">▲</b>
+          )}
+          {trend === "cold" && (
+            <b className={styles.trendCold} title="The market is tired of this — cheaper, weaker openings">▼</b>
+          )}
         </span>
-        {hot && (
-          <span className={styles.hot} title="Rivals are circling">
-            <IconFlame size={12} /> HOT
+        {promisedBy !== undefined ? (
+          <span
+            className={styles.promised}
+            title={`You promised ${script.writerName} a greenlight by the end of year ${promisedBy} — break it and the town hears`}
+          >
+            OWED · Y{promisedBy}
           </span>
+        ) : (
+          hot && (
+            <span className={styles.hot} title="Rivals are circling">
+              <IconFlame size={12} /> HOT
+            </span>
+          )
         )}
       </div>
       <h4 className={styles.title}>{script.title}</h4>
@@ -98,9 +167,14 @@ function ScriptCard({
           COH {script.coherence}
         </span>
       </div>
-      <Button className={styles.buy} onClick={onBuy} disabled={!canAfford}>
-        OPTION IT · {fmtMoney(script.askingPrice)}
-      </Button>
+      <div className={styles.buyRow}>
+        <span className={styles.allIn} title="Rough total cost to make and release a film in this genre">
+          ALL-IN ~{fmtMoney(allIn)}
+        </span>
+        <Button className={styles.buy} onClick={onBuy} disabled={!affordable}>
+          {fmtMoney(script.askingPrice)}
+        </Button>
+      </div>
     </Panel>
   );
 }

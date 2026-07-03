@@ -39,7 +39,7 @@ function draw(rng: Rng, [min, max]: [number, number]): number {
 
 /** salary from fame + skill + heat; the single curve everyone hangs off */
 export function salaryCurve(fame: number, skill: number, heat: number): number {
-  return Math.max(0.5, (fame / 100) ** 2 * 12 + skill / 25 + heat / 20);
+  return Math.max(0.5, ((fame / 100) ** 2 * 12 + skill / 25 + heat / 20) * 0.85);
 }
 
 export function generateDirector(rng: Rng, ids: IdBox, used: Set<string>): Director {
@@ -127,6 +127,7 @@ export function generateActor(rng: Rng, ids: IdBox, used: Set<string>): Actor {
   const cheap = traits.includes("cheap-date") ? 0.7 : 1;
   const poison = traits.includes("box-office-poison") ? 0.55 : 1;
   const mult = (highBoth ? TUNING.highBothSalaryMult : 1) * cheap * poison;
+  const temperament = draw(rng, arch.temperament);
   return {
     kind: "actor",
     id: makeId(rng, ids.counter++, "act"),
@@ -139,8 +140,22 @@ export function generateActor(rng: Rng, ids: IdBox, used: Set<string>): Actor {
     traits,
     appeal,
     craft,
+    range: draw(rng, arch.range),
+    fanbase: arch.fanbase,
     typecast: arch.typecast,
-    temperament: draw(rng, arch.temperament),
+    temperament,
     backendAppetite: clamp(Math.round(range(rng, 10, 90))),
+    scandalRisk: clamp(
+      Math.round(temperament * 0.6 + (traits.includes("tabloid-magnet") ? 25 : 0) + range(rng, -10, 10)),
+    ),
   };
+}
+
+/** where someone is in their career arc — displayed as a chip, drives contracts */
+export function careerPhase(actor: Actor): import("../types").CareerPhase {
+  if (actor.age < 27) return actor.heat > 5 ? "ascendant" : "ingenue";
+  if (actor.age < 34 && actor.heat > 10) return "ascendant";
+  if (actor.age >= 48 && actor.heat > 15) return "comeback";
+  if (actor.age >= 50 || actor.heat < -15) return "fading";
+  return "prime";
 }

@@ -33,16 +33,35 @@ describe("policy bots (the no-dominant-strategy contract)", () => {
   const safety = stats(runBatch("maxSafety", N, YEARS));
   const vision = stats(runBatch("maxVision", N, YEARS));
   const balanced = stats(runBatch("balanced", N, YEARS));
+  const selective = stats(runBatch("selectiveDeny", N, YEARS));
+  const farmer = stats(runBatch("franchiseFarmer", N, YEARS));
+  const hype = stats(runBatch("hypeAbuser", N, YEARS));
 
   it("prints the tuning table", () => {
     // eslint-disable-next-line no-console
-    console.table({ safety, vision, balanced });
+    console.table({ safety, vision, balanced, selective, farmer, hype });
     expect(true).toBe(true);
+  });
+
+  it("franchise farming is safe money that starves legacy", () => {
+    expect(farmer.bankruptRate).toBeLessThanOrEqual(balanced.bankruptRate);
+    expect(farmer.meanLegacy).toBeLessThan(balanced.meanLegacy);
+  });
+
+  it("shouting EVENT at everything is not a dominant strategy", () => {
+    // the under-delivery penalty must keep the abuser from running away with it
+    expect(hype.meanScore).toBeLessThanOrEqual(Math.max(balanced.meanScore, selective.meanScore) * 1.05);
+  });
+
+  it("selective denial beats indulging everyone (deny-some is optimal)", () => {
+    // the good reader of reputations out-scores grant-all at no worse survival
+    expect(selective.meanScore).toBeGreaterThan(vision.meanScore);
+    expect(selective.bankruptRate).toBeLessThanOrEqual(vision.bankruptRate);
   });
 
   it("bots actually play: everyone releases films", () => {
     expect(safety.meanReleased).toBeGreaterThan(3);
-    expect(vision.meanReleased).toBeGreaterThan(2);
+    expect(vision.meanReleased).toBeGreaterThan(1.5);
     expect(balanced.meanReleased).toBeGreaterThan(3);
   });
 

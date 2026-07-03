@@ -1,4 +1,4 @@
-import type { Genre, TraitId } from "../engine/types";
+import type { Fanbase, Genre, TraitId } from "../engine/types";
 
 /**
  * Archetype templates fix stat correlations for generated people. Ranges are
@@ -62,25 +62,35 @@ export interface ActorArchetype {
   temperament: [number, number];
   typecast: Genre[];
   traits: TraitId[];
+  fanbase: Fanbase;
+  range: [number, number];
 }
 
 export const ACTOR_ARCHETYPES: ActorArchetype[] = [
-  { label: "The Ageing Action Star", appealBias: 20, temperament: [30, 60], typecast: ["action", "thriller"], traits: ["franchise-friendly"] },
-  { label: "The Twee Indie Darling", appealBias: -15, temperament: [20, 45], typecast: ["drama", "romance"], traits: ["festival-darling"] },
-  { label: "The Method Volcano", appealBias: -10, temperament: [65, 95], typecast: ["drama", "war", "crime"], traits: ["method", "feuds"] },
-  { label: "The Charm Offensive", appealBias: 25, temperament: [10, 30], typecast: ["comedy", "romance"], traits: ["crowd-whisperer"] },
-  { label: "The Scream Queen/King", appealBias: 5, temperament: [15, 40], typecast: ["horror", "thriller"], traits: ["cheap-date"] },
-  { label: "The Franchise Face", appealBias: 30, temperament: [25, 55], typecast: ["action", "scifi", "family"], traits: ["franchise-friendly", "tabloid-magnet"] },
-  { label: "The Chameleon", appealBias: -20, temperament: [15, 40], typecast: ["drama", "crime"], traits: ["chameleon"] },
-  { label: "The Fallen A-Lister", appealBias: 10, temperament: [50, 85], typecast: ["thriller", "crime"], traits: ["box-office-poison", "tabloid-magnet"] },
-  { label: "The Musical Theatre Escapee", appealBias: -5, temperament: [20, 50], typecast: ["musical", "romance", "comedy"], traits: [] },
-  { label: "The Stoic Prestige Anchor", appealBias: -8, temperament: [5, 25], typecast: ["war", "drama"], traits: ["old-reliable"] },
-  { label: "The Internet's Boyfriend/Girlfriend", appealBias: 22, temperament: [20, 50], typecast: ["romance", "comedy", "scifi"], traits: ["tabloid-magnet"] },
-  { label: "The Character Great", appealBias: -25, temperament: [10, 35], typecast: ["crime", "drama", "horror"], traits: ["chameleon", "cheap-date"] },
-  { label: "The Kid-Movie Money Printer", appealBias: 28, temperament: [10, 35], typecast: ["family", "comedy"], traits: ["franchise-friendly"] },
-  { label: "The Comeback Story", appealBias: 0, temperament: [35, 70], typecast: ["drama", "action"], traits: ["tabloid-magnet"] },
-  { label: "The Festival Muse", appealBias: -18, temperament: [25, 55], typecast: ["drama", "romance", "musical"], traits: ["festival-darling", "method"] },
-  { label: "The Reliable Second Lead", appealBias: -5, temperament: [5, 25], typecast: ["comedy", "thriller", "family"], traits: ["old-reliable", "cheap-date"] },
+  { label: "The Ageing Action Star", appealBias: 20, temperament: [30, 60], typecast: ["action", "thriller"], traits: ["franchise-friendly"], fanbase: "nostalgia", range: [15, 40] },
+  { label: "The Twee Indie Darling", appealBias: -15, temperament: [20, 45], typecast: ["drama", "romance"], traits: ["festival-darling"], fanbase: "arthouse", range: [40, 70] },
+  { label: "The Method Volcano", appealBias: -10, temperament: [65, 95], typecast: ["drama", "war", "crime"], traits: ["method", "feuds"], fanbase: "arthouse", range: [60, 90] },
+  { label: "The Charm Offensive", appealBias: 25, temperament: [10, 30], typecast: ["comedy", "romance"], traits: ["crowd-whisperer"], fanbase: "broad", range: [25, 55] },
+  { label: "The Scream Queen/King", appealBias: 5, temperament: [15, 40], typecast: ["horror", "thriller"], traits: ["cheap-date"], fanbase: "genre", range: [30, 60] },
+  { label: "The Franchise Face", appealBias: 30, temperament: [25, 55], typecast: ["action", "scifi", "family"], traits: ["franchise-friendly", "tabloid-magnet"], fanbase: "broad", range: [15, 45] },
+  { label: "The Chameleon", appealBias: -20, temperament: [15, 40], typecast: ["drama", "crime"], traits: ["chameleon"], fanbase: "arthouse", range: [80, 98] },
+  { label: "The Fallen A-Lister", appealBias: 10, temperament: [50, 85], typecast: ["thriller", "crime"], traits: ["box-office-poison", "tabloid-magnet"], fanbase: "nostalgia", range: [35, 65] },
+  { label: "The Musical Theatre Escapee", appealBias: -5, temperament: [20, 50], typecast: ["musical", "romance", "comedy"], traits: [], fanbase: "genre", range: [45, 75] },
+  { label: "The Stoic Prestige Anchor", appealBias: -8, temperament: [5, 25], typecast: ["war", "drama"], traits: ["old-reliable"], fanbase: "broad", range: [50, 75] },
+  { label: "The Internet's Boyfriend/Girlfriend", appealBias: 22, temperament: [20, 50], typecast: ["romance", "comedy", "scifi"], traits: ["tabloid-magnet"], fanbase: "teen", range: [20, 50] },
+  { label: "The Character Great", appealBias: -25, temperament: [10, 35], typecast: ["crime", "drama", "horror"], traits: ["chameleon", "cheap-date"], fanbase: "arthouse", range: [75, 95] },
+  { label: "The Kid-Movie Money Printer", appealBias: 28, temperament: [10, 35], typecast: ["family", "comedy"], traits: ["franchise-friendly"], fanbase: "broad", range: [10, 35] },
+  { label: "The Comeback Story", appealBias: 0, temperament: [35, 70], typecast: ["drama", "action"], traits: ["tabloid-magnet"], fanbase: "nostalgia", range: [40, 70] },
+  { label: "The Festival Muse", appealBias: -18, temperament: [25, 55], typecast: ["drama", "romance", "musical"], traits: ["festival-darling", "method"], fanbase: "arthouse", range: [55, 85] },
+  { label: "The Reliable Second Lead", appealBias: -5, temperament: [5, 25], typecast: ["comedy", "thriller", "family"], traits: ["old-reliable", "cheap-date"], fanbase: "broad", range: [40, 65] },
+  { label: "The Algorithm's Choice", appealBias: 18, temperament: [10, 30], typecast: ["thriller", "scifi", "romance"], traits: [], fanbase: "teen", range: [20, 45] },
+  { label: "The Foreign Auteur Muse", appealBias: -12, temperament: [20, 45], typecast: ["drama", "crime", "war"], traits: ["festival-darling"], fanbase: "arthouse", range: [60, 88] },
+  { label: "The Stunt Legend", appealBias: 8, temperament: [10, 30], typecast: ["action", "war"], traits: ["cheap-date", "old-reliable"], fanbase: "genre", range: [10, 30] },
+  { label: "The Nepo Baby", appealBias: 12, temperament: [30, 60], typecast: ["drama", "romance", "thriller"], traits: ["tabloid-magnet"], fanbase: "teen", range: [25, 60] },
+  { label: "The Sitcom Graduate", appealBias: 15, temperament: [10, 35], typecast: ["comedy", "family", "romance"], traits: ["crowd-whisperer"], fanbase: "broad", range: [30, 60] },
+  { label: "The Genre Cult Icon", appealBias: -2, temperament: [20, 50], typecast: ["horror", "scifi"], traits: ["franchise-friendly", "cheap-date"], fanbase: "genre", range: [35, 65] },
+  { label: "The Serious Comedian", appealBias: 8, temperament: [25, 55], typecast: ["comedy", "drama"], traits: [], fanbase: "broad", range: [55, 85] },
+  { label: "The Action Sweetheart", appealBias: 20, temperament: [15, 40], typecast: ["action", "comedy"], traits: ["franchise-friendly"], fanbase: "broad", range: [25, 50] },
 ];
 
 export const TRAIT_LABELS: Record<TraitId, { label: string; blurb: string }> = {

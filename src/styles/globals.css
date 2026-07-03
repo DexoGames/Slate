@@ -38,6 +38,19 @@
     --vision: #ece6db;
     --danger: #e0442f; /* bankruptcy, COMPROMISED stamps */
 
+    /* --- genre accents: semantic colour, distinct from the stat axes --- */
+    --g-drama: #7ba8a0;
+    --g-comedy: #ffc83a;
+    --g-thriller: #a48ae0;
+    --g-horror: #8f3fae;
+    --g-action: #e0442f;
+    --g-scifi: #46d4c8;
+    --g-romance: #ef7bae;
+    --g-crime: #9a4a32;
+    --g-family: #7bd06a;
+    --g-war: #7a8552;
+    --g-musical: #e09b3f;
+
     --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
 
@@ -120,4 +133,16 @@ button {
 ::selection {
     background: var(--orange);
     color: var(--orange-ink);
+}
+
+/* motion is information here, but never required information */
+@media (prefers-reduced-motion: reduce) {
+
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
 }

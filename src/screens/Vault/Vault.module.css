@@ -10,6 +10,71 @@
     font-size: 0.8rem;
 }
 
+.franchises {
+    margin-bottom: 14px;
+}
+
+.ipGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 14px;
+}
+
+.ip {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    border: 1px solid var(--line-strong);
+    padding: 12px;
+}
+
+.ipName {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    text-transform: uppercase;
+    line-height: 1.05;
+}
+
+.ipMeta {
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+}
+
+.ipBar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--bone-dim);
+}
+
+.ipBar span {
+    flex: 0 0 78px;
+}
+
+.ipTrack {
+    flex: 1;
+    height: 6px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-on-black);
+}
+
+.ipTrack div {
+    height: 100%;
+    transition: width 0.25s ease;
+}
+
+.ipBar b {
+    flex: 0 0 22px;
+    text-align: right;
+    color: var(--bone);
+}
+
 .shelf {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));

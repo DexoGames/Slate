@@ -1,4 +1,5 @@
 import { PLAYER_STUDIO_NAMES } from "../data/names";
+import { generateIPListing } from "./franchise";
 import { generateActor, generateDirector, generateWriter } from "./generate/people";
 import { generateScript } from "./generate/scripts";
 import { makeRivals } from "./rivals";
@@ -6,7 +7,7 @@ import { TUNING } from "./tuning";
 import type { GameMode, GameState, Market, Writer } from "./types";
 import { int, makeRng, pick, type Rng } from "./rng";
 
-export const SAVE_VERSION = 1;
+export const SAVE_VERSION = 6;
 
 export function createMarket(rng: Rng, ids: { counter: number }): Market {
   const used = new Set<string>();
@@ -23,7 +24,7 @@ export function createMarket(rng: Rng, ids: { counter: number }): Market {
     const writer: Writer = pick(rng, writers);
     return generateScript(rng, ids, writer);
   });
-  return { directors, writers, actors, scripts };
+  return { directors, writers, actors, scripts, ips: [generateIPListing(rng, ids)] };
 }
 
 export function newGame(seed: number, mode: GameMode, studioName?: string): GameState {
@@ -32,9 +33,16 @@ export function newGame(seed: number, mode: GameMode, studioName?: string): Game
   const market = createMarket(rng, ids);
   const name = studioName ?? pick(rng, PLAYER_STUDIO_NAMES);
 
+  // the industry half-knows its veterans; newcomers are pure reputation
+  const familiarity: Record<string, number> = {};
+  for (const d of market.directors) {
+    familiarity[d.id] = Math.max(0, Math.min(0.35, (d.age - 32) / 100));
+  }
+
   return {
     version: SAVE_VERSION,
     mode,
+    trends: { hot: null, cold: null },
     clock: { year: 1, season: 0 },
     rngState: rng.state,
     seed,
@@ -47,6 +55,10 @@ export function newGame(seed: number, mode: GameMode, studioName?: string): Game
       streamingCut: 1,
       filmIds: [],
       relationships: {},
+      familiarity,
+      franchises: [],
+      contracts: {},
+      promises: [],
     },
     rivals: makeRivals(rng),
     market,

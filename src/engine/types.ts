@@ -95,15 +95,25 @@ export interface Writer extends Person {
   isWriterDirector: boolean;
 }
 
+export type Fanbase = "broad" | "genre" | "arthouse" | "teen" | "nostalgia";
+
+export type CareerPhase = "ingenue" | "ascendant" | "prime" | "fading" | "comeback";
+
 export interface Actor extends Person {
   kind: "actor";
   /** box-office draw — inflates Money regardless of performance */
   appeal: number;
   /** performance quality — feeds Execution and critical acclaim */
   craft: number;
+  /** how well they play OUTSIDE their persona; against-type payoffs scale with it */
+  range: number;
+  /** where the appeal actually applies */
+  fanbase: Fanbase;
   typecast: Genre[];
   temperament: number;
   backendAppetite: number;
+  /** hidden: fuel for scandal events (correlated with temperament) */
+  scandalRisk: number;
 }
 
 export type AnyPerson = Director | Writer | Actor;
@@ -125,6 +135,8 @@ export interface Script {
   title: string;
   logline: string;
   genre: Genre;
+  /** optional blend: sub-genre flavours money shape, hook and ambition */
+  subGenre?: Genre;
   hook: number;
   ambition: number;
   coherence: number;
@@ -147,7 +159,20 @@ export type DemandKind =
   | "crew"
   | "no-test-screenings"
   | "backend-points"
-  | "passion-project";
+  | "passion-project" // sequels only: "greenlight my weird thing within 2 years"
+  | "festival-premiere" // granted → the film premieres at the Meridian from post
+  | "craft-demand"; // genre-specific creative demands with bespoke effects
+
+/** what granting a craft-demand does to the film (all optional, additive) */
+export interface DemandEffects {
+  e?: number; // execution shift
+  a?: number; // ambition shift
+  x?: number; // accessibility shift
+  sigma?: number; // extra release-roll sigma (on top of the per-major bump)
+  cost?: number; // $M added to the production bill at greenlight
+  divisive?: number; // feeds the legacy divisiveness term
+  weatherRisk?: boolean; // doubles weather/logistics event odds
+}
 
 export interface Demand {
   id: string;
@@ -162,6 +187,7 @@ export interface Demand {
   actorId?: string;
   crewId?: string;
   points?: number;
+  effects?: DemandEffects;
 }
 
 export interface DemandDecision {
@@ -193,9 +219,11 @@ export interface CastSlot {
   actorName: string;
   deal: Deal;
   againstType: boolean;
-  /** appeal/craft snapshotted at signing (people age/change) */
+  /** appeal/craft/range/fanbase snapshotted at signing (people age/change) */
   appeal: number;
   craft: number;
+  range: number;
+  fanbase: Fanbase;
 }
 
 export interface VisionEntry {
@@ -213,6 +241,11 @@ export interface DeRiskingState {
 }
 
 export type ReleaseStrategy = "wide" | "platform" | "streaming";
+
+/** marketing stance: how loudly you promise the world this film */
+export type Posture = "quiet" | "standard" | "event";
+
+export type FestivalResult = "submitted" | "golden" | "divisive" | "polite";
 
 export interface SeasonStamp {
   year: number;
@@ -296,7 +329,12 @@ export interface Film {
   talentCost: number;
   visionLedger: VisionEntry[];
   deRisking: DeRiskingState;
-  release: { season: SeasonStamp; strategy: ReleaseStrategy } | null;
+  release: { season: SeasonStamp; strategy: ReleaseStrategy; posture: Posture } | null;
+  /** 0–100 pre-release expectation level; set at scheduling, moved by events */
+  hype: number;
+  festival?: FestivalResult;
+  /** crowd-score penalty accrued from scandals ridden out */
+  crowdPenalty: number;
   stage: FilmStage;
   /** seasons remaining in current stage */
   stageSeasonsLeft: number;
@@ -305,6 +343,10 @@ export interface Film {
   productionBonus: number;
   /** extra release-roll sigma accrued from production events */
   eventSigma: number;
+  /** net pairwise chemistry among the billed cast, computed at casting */
+  castChemistry: number;
+  /** set when the film is a franchise instalment */
+  franchiseId?: string;
   eventHistory: ProductionEventRecord[];
   /** extra money already sunk beyond budget (overruns, granted extensions) */
   overruns: number;
@@ -319,6 +361,37 @@ export interface Film {
 // ---------------------------------------------------------------------------
 // Studio / world
 
+export interface FranchiseIP {
+  id: string;
+  name: string;
+  kind: "original-hit" | "adaptation" | "remake";
+  genre: Genre;
+  /** 0–100 → opening floor, marketing efficiency, money-σ reduction */
+  awareness: number;
+  /** the crowd score the audience holds the next instalment to */
+  expectation: number;
+  /** 0–100; rises per instalment, recovers in fallow years */
+  fatigue: number;
+  instalments: string[]; // filmIds
+  sourceFilmId?: string;
+}
+
+export interface IPListing {
+  ip: FranchiseIP;
+  price: number;
+  blurb: string;
+}
+
+/** the price of an auteur's sequel: their weird thing gets made, or else */
+export interface PassionPromise {
+  directorId: string;
+  directorName: string;
+  scriptId: string;
+  scriptTitle: string;
+  /** greenlight it before the end of this year or the town hears about it */
+  byYear: number;
+}
+
 export interface Studio {
   name: string;
   cash: number;
@@ -329,6 +402,16 @@ export interface Studio {
   streamingCut: number;
   filmIds: string[];
   relationships: Record<string, number>;
+  /**
+   * 0..1 per director: how well this studio knows their TRUE quality. The
+   * forecast blends public reputation toward truth as familiarity grows.
+   */
+  familiarity: Record<string, number>;
+  franchises: FranchiseIP[];
+  /** multi-film deals: locked salary + films remaining, per person */
+  contracts: Record<string, { salary: number; filmsLeft: number }>;
+  /** passion-project greenlights owed to auteurs who did your sequels */
+  promises: PassionPromise[];
 }
 
 export type RivalPersonality = "blockbuster" | "prestige" | "genre-factory";
@@ -392,6 +475,8 @@ export interface Market {
   directors: Director[];
   writers: Writer[];
   actors: Actor[];
+  /** external IP up for grabs: adaptations, remake rights */
+  ips: IPListing[];
 }
 
 /** A production event awaiting the player's trust/protect choice. */
@@ -404,6 +489,8 @@ export interface PendingEvent {
   trustEffect: string;
   protectLabel: string;
   protectEffect: string;
+  /** the actor at the centre of it (scandals, contract holdouts) */
+  scandalActorId?: string;
 }
 
 export interface YearEndReport {
@@ -415,9 +502,15 @@ export interface YearEndReport {
   rivalStandings: { name: string; money: number; acclaim: number; isPlayer: boolean }[];
 }
 
+export interface GenreTrends {
+  hot: Genre | null;
+  cold: Genre | null;
+}
+
 export interface GameState {
   version: number;
   mode: GameMode;
+  trends: GenreTrends;
   clock: { year: number; season: 0 | 1 | 2 | 3 };
   rngState: number;
   seed: number;

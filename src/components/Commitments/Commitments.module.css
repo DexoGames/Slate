@@ -1,0 +1,61 @@
+.panel {
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    padding: 12px 14px;
+}
+
+.title {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    color: var(--bone);
+    border-bottom: 2px solid var(--orange);
+    padding-bottom: 5px;
+    margin-bottom: 8px;
+}
+
+.rows {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 0.68rem;
+    color: var(--bone-dim);
+}
+
+.row b {
+    color: var(--bone);
+    font-weight: 700;
+}
+
+.total {
+    border-top: 1px solid var(--line-on-black);
+    padding-top: 4px;
+    margin-top: 2px;
+}
+
+.total b {
+    color: var(--stat-money);
+}
+
+.credit b {
+    color: var(--danger);
+}
+
+.credit em {
+    font-style: normal;
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.creditLine {
+    font-size: 0.6rem;
+    color: var(--bone-dim);
+    text-align: right;
+}

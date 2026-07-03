@@ -11,7 +11,14 @@ import { chance, makeRng, pick, type Rng } from "../rng";
  * reducer — same action surface as the UI — so tuning data reflects the game
  * the player actually gets.
  */
-export type Policy = "maxSafety" | "maxVision" | "balanced" | "random";
+export type Policy =
+  | "maxSafety"
+  | "maxVision"
+  | "balanced"
+  | "random"
+  | "selectiveDeny"
+  | "franchiseFarmer" // builds one IP and milks it
+  | "hypeAbuser"; // EVENT posture on everything, always
 
 export interface CampaignSummary {
   policy: Policy;
@@ -36,7 +43,8 @@ function pickScript(rng: Rng, policy: Policy, scripts: Script[], cash: number): 
   );
   if (affordable.length === 0) return null;
   switch (policy) {
-    case "maxSafety": {
+    case "maxSafety":
+    case "franchiseFarmer": {
       const safe = affordable.filter((s) => ["horror", "comedy", "action", "family", "thriller"].includes(s.genre));
       const pool = safe.length > 0 ? safe : affordable;
       return pool.reduce((a, b) => (a.hook > b.hook ? a : b));
@@ -44,6 +52,8 @@ function pickScript(rng: Rng, policy: Policy, scripts: Script[], cash: number): 
     case "maxVision":
       return affordable.reduce((a, b) => (a.ambition > b.ambition ? a : b));
     case "balanced":
+    case "selectiveDeny":
+    case "hypeAbuser":
       return affordable.reduce((a, b) =>
         a.hook + a.ambition > b.hook + b.ambition ? a : b,
       );
@@ -53,10 +63,18 @@ function pickScript(rng: Rng, policy: Policy, scripts: Script[], cash: number): 
 }
 
 /** would this policy grant the demand? "coin" = flips at hire time */
-function grantRule(policy: Policy, weight: 1 | 2 | 3): boolean | "coin" {
+function grantRule(policy: Policy, weight: 1 | 2 | 3, director?: Director): boolean | "coin" {
   if (policy === "maxVision") return true;
-  if (policy === "maxSafety") return weight === 1;
-  if (policy === "balanced") return weight <= 2 ? true : "coin";
+  if (policy === "maxSafety" || policy === "franchiseFarmer") return weight === 1;
+  if (policy === "balanced" || policy === "hypeAbuser") return weight <= 2 ? true : "coin";
+  if (policy === "selectiveDeny") {
+    // the good reader of reputations: indulge the genuinely skilled, and
+    // never hand chaos merchants extra variance
+    if (!director) return weight === 1;
+    if (director.craft >= 70) return true;
+    if (director.volatility >= 60) return weight === 1;
+    return weight <= 2;
+  }
   return "coin";
 }
 
@@ -65,7 +83,7 @@ function plannedFloor(policy: Policy, game: GameState, film: Film, d: Director):
   const floorDemand = demandsFor(game, film, d).find((dd) => dd.kind === "budget-floor");
   if (!floorDemand?.budgetFloor) return 0;
   // treat coins as granted — conservative affordability check
-  return grantRule(policy, floorDemand.weight) === false ? 0 : floorDemand.budgetFloor;
+  return grantRule(policy, floorDemand.weight, d) === false ? 0 : floorDemand.budgetFloor;
 }
 
 function pickDirector(
@@ -78,17 +96,27 @@ function pickDirector(
     (d) =>
       d.salary < game.studio.cash * 0.35 &&
       d.minTier <= tierIndexToTier(game) &&
-      plannedFloor(policy, game, film, d) <= game.studio.cash * 0.5,
+      plannedFloor(policy, game, film, d) <= game.studio.cash * 0.5 &&
+      // the farmer never opens a negotiation it would have to walk out of:
+      // auteurs want a passion project for a sequel, and the farmer won't grant it
+      !(
+        policy === "franchiseFarmer" &&
+        film.franchiseId &&
+        d.style > TUNING.franchise.auteurRefusalStyle
+      ),
   );
   if (candidates.length === 0) return null;
   switch (policy) {
     case "maxSafety":
+    case "franchiseFarmer":
       return candidates.reduce((a, b) =>
         a.style - a.volatility < b.style - b.volatility ? a : b,
       );
     case "maxVision":
       return candidates.reduce((a, b) => (a.vision + a.style > b.vision + b.style ? a : b));
-    case "balanced": {
+    case "balanced":
+    case "selectiveDeny":
+    case "hypeAbuser": {
       const fit = (d: Director) => (d.genres[film.genre] ?? 40) + d.craft;
       return candidates.reduce((a, b) => (fit(a) > fit(b) ? a : b));
     }
@@ -115,12 +143,15 @@ function pickCast(rng: Rng, policy: Policy, game: GameState, film: Film) {
   let ordered: Actor[];
   switch (policy) {
     case "maxSafety":
+    case "franchiseFarmer":
       ordered = by((a) => a.appeal);
       break;
     case "maxVision":
       ordered = by((a) => a.craft);
       break;
     case "balanced":
+    case "selectiveDeny":
+    case "hypeAbuser":
       ordered = by((a) => a.appeal + a.craft);
       break;
     case "random":
@@ -177,7 +208,7 @@ export function playCampaign(
     if (game.pendingEvents.length > 0) {
       const e = game.pendingEvents[0];
       const choice =
-        policy === "maxSafety"
+        policy === "maxSafety" || policy === "franchiseFarmer"
           ? "protect"
           : policy === "maxVision"
             ? "trust"
@@ -226,8 +257,15 @@ export function playCampaign(
         dr = { ...postFilm.deRisking };
         toolCost = 0;
       }
-      const desired = Math.round(postFilm.budget * (policy === "maxSafety" ? 0.6 : 0.4));
-      const focusFactor = dr.focusMarketing ? 1 + t.focusMarketingPct : 1;
+      const desired = Math.round(
+        postFilm.budget *
+          (policy === "maxSafety" || policy === "franchiseFarmer" || policy === "hypeAbuser"
+            ? 0.6
+            : 0.4),
+      );
+      const posture = policy === "hypeAbuser" ? ("event" as const) : ("standard" as const);
+      const focusFactor =
+        (dr.focusMarketing ? 1 + t.focusMarketingPct : 1) * t.hype.postureCost[posture];
       const { season, strategy } = chooseWindow(game, policy);
       // keep enough back to pay overhead until the box office arrives
       const seasonsOut =
@@ -242,6 +280,7 @@ export function playCampaign(
         marketing,
         season,
         strategy,
+        posture,
       });
       continue;
     }
@@ -252,7 +291,7 @@ export function playCampaign(
         if (director) {
           const demands = demandsFor(game, devFilm, director);
           const decisions = demands.map((demand) => {
-            const rule = grantRule(policy, demand.weight);
+            const rule = grantRule(policy, demand.weight, director);
             return { demand, granted: rule === "coin" ? chance(rng, 0.5) : rule };
           });
           const before = game;
@@ -308,6 +347,25 @@ export function playCampaign(
       }
       game = step(game, { type: "ADVANCE_SEASON" });
       continue;
+    }
+
+    // 4a. the farmer goes back to the well before it goes to the market
+    if (
+      policy === "franchiseFarmer" &&
+      inFlight < productionSlots(game.studio.legacyPoints) &&
+      game.studio.cash > 18
+    ) {
+      const ip = game.studio.franchises
+        .filter((f) => f.fatigue <= 50)
+        .reduce<(typeof game.studio.franchises)[number] | null>(
+          (best, f) => (best === null || f.awareness > best.awareness ? f : best),
+          null,
+        );
+      if (ip) {
+        const before = game;
+        game = step(game, { type: "DEVELOP_SEQUEL", franchiseId: ip.id });
+        if (game !== before) continue;
+      }
     }
 
     // 4. buy a script when there's room

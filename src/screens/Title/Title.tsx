@@ -101,6 +101,26 @@ export function Title({
               the bank bridge a small overdraft (at interest). Run out entirely and
               you get exactly one library sale. Then it's over.
             </p>
+            <p>
+              <b>FRANCHISES.</b> A profitable, loved film mints an IP; adaptations
+              and remake rights appear in the market. Awareness is bankable safety —
+              but every instalment raises the bar and tires the audience, and
+              auteurs only do your sequel if you promise to greenlight their weird
+              thing. Break that promise and the town hears about it.
+            </p>
+            <p>
+              <b>THE NOISE.</b> Marketing posture (QUIET / STANDARD / EVENT) sets
+              both the opening and the bar the film is judged against —
+              under-deliver on an EVENT and the legs collapse; over-deliver quietly
+              and you have a sleeper. The Meridian Festival each Spring is the only
+              critic heat money can buy before release.
+            </p>
+            <p>
+              <b>PEOPLE.</b> Multi-film contracts lock a rate and block rival
+              poaching — until a star's price outgrows the paper and they hold out
+              on set. Risky stars are cheap for a reason: when the scandal breaks,
+              you stand by them or cut them loose, and everyone remembers which.
+            </p>
           </div>
         </Modal>
       )}

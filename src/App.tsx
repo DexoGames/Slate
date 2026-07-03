@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EventModal } from "./components/EventModal/EventModal";
 import { Hud } from "./components/Hud/Hud";
 import { NewsTicker } from "./components/NewsTicker/NewsTicker";
+import { fmtSeason } from "./lib/format";
 import type { GameMode } from "./engine/types";
 import { Casting } from "./screens/Casting/Casting";
 import { Dashboard } from "./screens/Dashboard/Dashboard";
@@ -29,6 +30,22 @@ export function App() {
   const { game, dispatch } = useGame();
   const [onTitle, setOnTitle] = useState(true);
   const [view, setView] = useState<View>({ kind: "dashboard" });
+  const [interstitial, setInterstitial] = useState<string | null>(null);
+  const lastClock = useRef<string | null>(null);
+
+  // the turn's heartbeat: a brief season card when the clock moves quietly
+  // (suppressed when a release night or year-end ceremony is queued)
+  useEffect(() => {
+    if (!game) return;
+    const stamp = `${game.clock.year}-${game.clock.season}`;
+    const prevStamp = lastClock.current;
+    lastClock.current = stamp;
+    if (prevStamp === null || prevStamp === stamp) return;
+    if (game.screen !== "dashboard" || game.pendingEvents.length > 0) return;
+    setInterstitial(fmtSeason(game.clock).toUpperCase());
+    const t = setTimeout(() => setInterstitial(null), 700);
+    return () => clearTimeout(t);
+  }, [game]);
 
   if (!game || onTitle) {
     return (
@@ -86,12 +103,22 @@ export function App() {
             dispatch({ type: "BUY_SCRIPT", scriptId });
             setView({ kind: "dashboard" });
           }}
+          onBuyIP={(ipId) => dispatch({ type: "BUY_IP", ipId })}
           onBack={() => setView({ kind: "dashboard" })}
         />
       );
     }
     if (view.kind === "vault") {
-      return <Vault game={game} onBack={() => setView({ kind: "dashboard" })} />;
+      return (
+        <Vault
+          game={game}
+          onBack={() => setView({ kind: "dashboard" })}
+          onDevelopSequel={(franchiseId) => {
+            dispatch({ type: "DEVELOP_SEQUEL", franchiseId });
+            setView({ kind: "dashboard" });
+          }}
+        />
+      );
     }
     if (view.kind === "negotiation" && film) {
       return (
@@ -111,8 +138,8 @@ export function App() {
         <Casting
           game={game}
           film={film}
-          onCast={(cast) => {
-            dispatch({ type: "SET_CAST", filmId: film.id, cast });
+          onCast={(cast, contractActorIds) => {
+            dispatch({ type: "SET_CAST", filmId: film.id, cast, contractActorIds });
             setView({ kind: "film", id: film.id });
           }}
           onBack={() => setView({ kind: "film", id: film.id })}
@@ -135,7 +162,7 @@ export function App() {
           onGreenlight={(budget, days, bond) =>
             dispatch({ type: "GREENLIGHT", filmId: film.id, budget, days, bond })
           }
-          onSchedule={(dr, marketing, season, strategy) => {
+          onSchedule={(dr, marketing, season, strategy, posture) => {
             dispatch({
               type: "SCHEDULE_RELEASE",
               filmId: film.id,
@@ -143,9 +170,11 @@ export function App() {
               marketing,
               season,
               strategy,
+              posture,
             });
             setView({ kind: "dashboard" });
           }}
+          onFestival={() => dispatch({ type: "SUBMIT_FESTIVAL", filmId: film.id })}
         />
       );
     }
@@ -171,6 +200,11 @@ export function App() {
       />
       <main className={styles.main}>{body}</main>
       <NewsTicker news={game.newsLog} />
+      {interstitial && (
+        <div className={styles.interstitial} onClick={() => setInterstitial(null)}>
+          <span>{interstitial}</span>
+        </div>
+      )}
       {pending && pendingFilm && !game.gameOver && (
         <EventModal
           event={pending}

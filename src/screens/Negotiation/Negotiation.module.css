@@ -146,6 +146,9 @@
 .sheetRight {
     position: sticky;
     top: calc(var(--hud-h) + 16px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
 .hint {
@@ -194,6 +197,14 @@
     font-size: 0.7rem;
     font-style: italic;
     color: var(--bone-dim);
+}
+
+.effects {
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--gold);
 }
 
 .toggle {

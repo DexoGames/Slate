@@ -1,0 +1,19 @@
+.up {
+    animation: flashUp 0.7s ease;
+}
+
+.down {
+    animation: flashDown 0.7s ease;
+}
+
+@keyframes flashUp {
+    30% {
+        color: var(--stat-money);
+    }
+}
+
+@keyframes flashDown {
+    30% {
+        color: var(--danger);
+    }
+}

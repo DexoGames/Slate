@@ -2,12 +2,23 @@ import { useMemo, useState } from "react";
 import { TRAIT_LABELS } from "../../data/archetypes";
 import { Panel, SectionTitle, StatChip, Weight } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
+import { Commitments } from "../../components/Commitments/Commitments";
 import { DistributionPanel } from "../../components/DistributionPanel/DistributionPanel";
+import { canAfford } from "../../engine/economy";
 import { estimateOutcomes } from "../../engine/distribution";
+import { franchiseOf } from "../../engine/franchise";
 import { demandsFor, walkAwayRisk } from "../../engine/negotiation";
+import { perceivedDirector, reputationOf } from "../../engine/perception";
 import { prestigeTier } from "../../engine/score";
-import { GENRE_LABELS } from "../../engine/tuning";
-import type { Demand, DemandDecision, Director, Film, GameState } from "../../engine/types";
+import { GENRE_LABELS, TUNING } from "../../engine/tuning";
+import type {
+  Demand,
+  DemandDecision,
+  DemandEffects,
+  Director,
+  Film,
+  GameState,
+} from "../../engine/types";
 import {
   IconDice,
   IconDirector,
@@ -45,6 +56,45 @@ export function Negotiation({
   ) : (
     <DirectorList game={game} film={film} onPick={setDirectorId} onBack={onBack} />
   );
+}
+
+/**
+ * What the town THINKS they're worth. A fuzzy band that tightens the better
+ * you know them — the true numbers are never shown.
+ */
+function Reputation({ game, director }: { game: GameState; director: Director }) {
+  const rep = reputationOf(game, director);
+  const band = (est: number) =>
+    `${Math.max(0, est - rep.band)}–${Math.min(100, est + rep.band)}`;
+  return (
+    <>
+      <StatChip
+        icon={<IconDirector size={12} />}
+        value={`≈${band(rep.craftEst)}`}
+        label="craft rep."
+        title={rep.familiarity > 0.6 ? "You know this one well" : "Reputation — the town could be wrong"}
+      />
+      <StatChip
+        icon={<IconPalette size={12} />}
+        value={`≈${band(rep.visionEst)}`}
+        label="vision rep."
+        color="var(--stat-legacy)"
+        title={rep.familiarity > 0.6 ? "You know this one well" : "Reputation — the town could be wrong"}
+      />
+    </>
+  );
+}
+
+function effectsLine(e: DemandEffects): string {
+  const parts: string[] = [];
+  if (e.e) parts.push(`${e.e > 0 ? "+" : ""}${e.e} exec`);
+  if (e.a) parts.push(`${e.a > 0 ? "+" : ""}${e.a} ambition`);
+  if (e.x) parts.push(`${e.x > 0 ? "+" : ""}${e.x} accessibility`);
+  if (e.sigma) parts.push(`+${e.sigma}σ`);
+  if (e.divisive) parts.push("divisive");
+  if (e.cost) parts.push(`+$${e.cost}M`);
+  if (e.weatherRisk) parts.push("shoot risk ×2");
+  return parts.join(" · ");
 }
 
 function StyleAxis({ style }: { style: number }) {
@@ -86,6 +136,9 @@ function DirectorList({
       </div>
       <div className={styles.grid}>
         {sorted.map((d) => {
+          // auteurs take sequels only if their passion project is part of the deal
+          const wantsPassion =
+            !!film.franchiseId && d.style > TUNING.franchise.auteurRefusalStyle;
           const locked = d.minTier > tier;
           return (
             <Panel key={d.id} className={cx(styles.card, locked && styles.locked)}>
@@ -99,8 +152,7 @@ function DirectorList({
               </div>
               <StyleAxis style={d.style} />
               <div className={styles.statRow}>
-                <StatChip icon={<IconDirector size={12} />} value={d.craft} label="craft" />
-                <StatChip icon={<IconPalette size={12} />} value={d.vision} label="vision" color="var(--stat-legacy)" />
+                <Reputation game={game} director={d} />
                 <StatChip icon={<IconDice size={12} />} value={d.volatility} label="chaos" />
                 <StatChip
                   icon={<span className={styles.fit} />}
@@ -134,10 +186,14 @@ function DirectorList({
               )}
               <Button
                 className={styles.pickBtn}
-                disabled={locked || game.studio.cash < d.salary}
+                disabled={locked || !canAfford(game, d.salary)}
                 onClick={() => onPick(d.id)}
               >
-                {locked ? `NEEDS TIER ${d.minTier} STUDIO` : "OPEN NEGOTIATIONS"}
+                {locked
+                  ? `NEEDS TIER ${d.minTier} STUDIO`
+                  : wantsPassion
+                    ? "“WE'D HAVE TO TALK TERMS”"
+                    : "OPEN NEGOTIATIONS"}
               </Button>
             </Panel>
           );
@@ -194,8 +250,15 @@ function DemandSheet({
   }, [film, director, JSON.stringify(granted), demands]);
 
   const estimate = useMemo(
-    () => estimateOutcomes(draft, director, game.rivals),
-    [draft, director, game.rivals],
+    () =>
+      estimateOutcomes(
+        draft,
+        perceivedDirector(game, director),
+        game.rivals,
+        game.trends,
+        franchiseOf(game, film),
+      ),
+    [draft, director, game, film],
   );
 
   const grantedCost =
@@ -212,11 +275,6 @@ function DemandSheet({
             ← Directors
           </Button>
         </div>
-        <p className={styles.hint}>
-          Granting demands <b>widens</b> the outcome range and raises the ceiling.
-          Denying them <b>narrows and caps</b> it — and chips the film's vision.
-          Neither is free.
-        </p>
         <div className={styles.demands}>
           {demands.length === 0 && (
             <Panel>
@@ -232,6 +290,7 @@ function DemandSheet({
                   <Weight n={d.weight} />
                 </div>
                 <p className={styles.detail}>{d.detail}</p>
+                {d.effects && <p className={styles.effects}>{effectsLine(d.effects)}</p>}
                 <div className={styles.toggle}>
                   <button
                     className={cx(styles.toggleBtn, isGranted && styles.grantOn)}
@@ -274,7 +333,7 @@ function DemandSheet({
                 label="budget floor"
               />
             )}
-            <Button onClick={() => onSign(decisions)} disabled={game.studio.cash < director.salary}>
+            <Button onClick={() => onSign(decisions)} disabled={!canAfford(game, director.salary)}>
               SIGN {director.name.split(" ")[0].toUpperCase()}
             </Button>
           </div>
@@ -282,6 +341,7 @@ function DemandSheet({
       </div>
       <div className={styles.sheetRight}>
         <DistributionPanel estimate={estimate} />
+        <Commitments game={game} film={draft} overrides={{ extraTalent: director.salary }} />
       </div>
     </div>
   );

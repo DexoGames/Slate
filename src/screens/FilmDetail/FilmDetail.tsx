@@ -1,15 +1,23 @@
 import { useMemo, useState } from "react";
 import { Panel, SectionTitle, StatChip } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
+import { Commitments } from "../../components/Commitments/Commitments";
 import { DistributionPanel } from "../../components/DistributionPanel/DistributionPanel";
 import { VisionMeter } from "../../components/VisionMeter/VisionMeter";
+import { StagePips } from "../../components/StagePips/StagePips";
+import { canAfford, estimateCommitments } from "../../engine/economy";
 import { estimateOutcomes } from "../../engine/distribution";
+import { franchiseOf } from "../../engine/franchise";
+import { filmNeedsAction } from "../../engine/needs";
+import { perceivedDirector } from "../../engine/perception";
 import { directorOf } from "../../engine/season";
 import { GENRE_LABELS, GENRE_NORMS, TUNING } from "../../engine/tuning";
+import { computeHype } from "../../engine/publicity";
 import type {
   DeRiskingState,
   Film,
   GameState,
+  Posture,
   ReleaseStrategy,
   SeasonStamp,
 } from "../../engine/types";
@@ -19,6 +27,7 @@ import {
   IconCalendar,
   IconCamera,
   IconDirector,
+  IconFlame,
   IconMegaphone,
   IconMoney,
   IconScissors,
@@ -27,6 +36,7 @@ import {
   IconWriter,
 } from "../../icons";
 import { fmtMoney, SEASON_NAMES } from "../../lib/format";
+import { genreColor } from "../../lib/genreColor";
 import { cx } from "../../lib/cx";
 import styles from "./FilmDetail.module.css";
 
@@ -44,7 +54,9 @@ interface Props {
     marketing: number,
     season: SeasonStamp,
     strategy: ReleaseStrategy,
+    posture: Posture,
   ) => void;
+  onFestival: () => void;
 }
 
 export function FilmDetail(props: Props) {
@@ -79,15 +91,19 @@ function Development({
     () => ({ ...film, budget, shootingDays: days }),
     [film, budget, days],
   );
-  const director = directorOf(game, film);
+  const director = perceivedDirector(game, directorOf(game, film));
   const estimate = useMemo(
-    () => estimateOutcomes(draft, director, game.rivals),
-    [draft, director, game.rivals],
+    () => estimateOutcomes(draft, director, game.rivals, game.trends, franchiseOf(game, film)),
+    [draft, director, game.rivals, game.trends],
   );
 
   const bondCost = bond ? Math.round(budget * TUNING.completionBondPct * 10) / 10 : 0;
   const canGreenlight = !!film.directorId && film.cast.length > 0;
   const total = budget + bondCost;
+  const commitments = estimateCommitments(game, film, {
+    budget: budget + bondCost,
+    marketing: Math.round(budget * 0.4),
+  });
   const passes = film.script.rewrites.length;
   const nextPassIdx = Math.min(passes, TUNING.rewriteCoherence.length - 1);
   const nextCoh = TUNING.rewriteCoherence[nextPassIdx];
@@ -111,14 +127,14 @@ function Development({
             <Button
               variant="secondary"
               onClick={() => onRewrite(false)}
-              disabled={game.studio.cash < TUNING.rewriteCostOriginal}
+              disabled={!canAfford(game, TUNING.rewriteCostOriginal)}
             >
               NOTES PASS · {fmtMoney(TUNING.rewriteCostOriginal)}
             </Button>
             <Button
               variant="secondary"
               onClick={() => onRewrite(true)}
-              disabled={game.studio.cash < TUNING.rewriteCostFixer}
+              disabled={!canAfford(game, TUNING.rewriteCostFixer)}
             >
               BRING A FIXER · {fmtMoney(TUNING.rewriteCostFixer)}
             </Button>
@@ -218,11 +234,20 @@ function Development({
             />
             <Button
               onClick={() => onGreenlight(budget, days, bond)}
-              disabled={!canGreenlight || game.studio.cash < total}
+              disabled={!canGreenlight || !canAfford(game, total)}
             >
               GREENLIGHT ▸
             </Button>
           </div>
+          <p
+            className={cx(
+              styles.greenlightProjection,
+              commitments.cashAfter < 0 && styles.projectionWarn,
+            )}
+          >
+            cash after release spend ≈ {fmtMoney(commitments.cashAfter)}
+            {commitments.cashAfter < 0 && " (credit)"}
+          </p>
           {!canGreenlight && (
             <p className={styles.greenlightHint}>Needs a director and a cast first.</p>
           )}
@@ -234,6 +259,11 @@ function Development({
       </div>
       <div className={styles.right}>
         <DistributionPanel estimate={estimate} />
+        <Commitments
+          game={game}
+          film={film}
+          overrides={{ budget: budget + bondCost, marketing: Math.round(budget * 0.4) }}
+        />
         <Panel>
           <VisionMeter
             value={filmVision(film)}
@@ -309,13 +339,14 @@ function SliderRow({
 
 // ---------------------------------------------------------------- post & release
 
-function Post({ game, film, onBack, onSchedule }: Props) {
+function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) {
   const noTests = film.demands.some(
     (d) => d.granted && d.demand.kind === "no-test-screenings",
   );
   const [dr, setDr] = useState<DeRiskingState>(film.deRisking);
   const [marketing, setMarketing] = useState(Math.round(film.budget * 0.4));
   const [strategy, setStrategy] = useState<ReleaseStrategy>("wide");
+  const [posture, setPosture] = useState<Posture>("standard");
   const [seasonOffset, setSeasonOffset] = useState(1);
 
   const windows: SeasonStamp[] = Array.from({ length: 4 }, (_, i) => {
@@ -329,18 +360,19 @@ function Post({ game, film, onBack, onSchedule }: Props) {
       ...film,
       deRisking: dr,
       marketing,
-      release: { season: chosen, strategy },
+      release: { season: chosen, strategy, posture },
     }),
-    [film, dr, marketing, chosen, strategy],
+    [film, dr, marketing, chosen, strategy, posture],
   );
-  const director = directorOf(game, film);
+  const hype = computeHype(draft, posture, marketing, franchiseOf(game, film));
+  const director = perceivedDirector(game, directorOf(game, film));
   const estimate = useMemo(
-    () => estimateOutcomes(draft, director, game.rivals),
-    [draft, director, game.rivals],
+    () => estimateOutcomes(draft, director, game.rivals, game.trends, franchiseOf(game, film)),
+    [draft, director, game.rivals, game.trends],
   );
 
   const t = TUNING;
-  let cost = marketing;
+  let cost = marketing * t.hype.postureCost[posture];
   if (dr.testScreeningHeld) cost += t.testScreeningCost;
   if (dr.notesImplemented === "minor") cost += t.notesCost.minor;
   if (dr.notesImplemented === "major") cost += t.notesCost.major;
@@ -493,6 +525,46 @@ function Post({ game, film, onBack, onSchedule }: Props) {
               </button>
             ))}
           </div>
+          <div className={styles.strategies}>
+            {(["quiet", "standard", "event"] as const).map((p) => (
+              <button
+                key={p}
+                className={cx(styles.strategy, posture === p && styles.strategyOn)}
+                onClick={() => setPosture(p)}
+              >
+                <b>{p.toUpperCase()}</b>
+                <span>
+                  {p === "quiet" && "Sneak it out. Cheap P&A, low bar — over-deliver and the legs are yours."}
+                  {p === "standard" && "A normal campaign. The film is judged as itself."}
+                  {p === "event" && "Promise the world (+25% P&A). Big opening — and a bar the film had better clear."}
+                </span>
+              </button>
+            ))}
+          </div>
+          <div className={styles.hypeRow}>
+            <span className={styles.hypeLabel}>
+              <IconFlame size={13} /> HYPE {hype}
+            </span>
+            <span className={styles.hypeBar}>
+              <i style={{ width: `${hype}%` }} />
+            </span>
+            <span className={styles.hypeNote}>
+              crowds will judge it against ≈{Math.round(t.hype.expectationBase + hype / t.hype.expectationDiv)}
+            </span>
+          </div>
+          {game.clock.season === 0 && !film.festival && (
+            <Button variant="secondary" onClick={onFestival}>
+              SUBMIT TO THE MERIDIAN FESTIVAL · {fmtMoney(t.festival.entryCost)} (screens in spring)
+            </Button>
+          )}
+          {film.festival && film.festival !== "submitted" && (
+            <p className={styles.festivalLine}>
+              MERIDIAN VERDICT: {film.festival === "golden" ? "GOLDEN MERIDIAN" : film.festival.toUpperCase()}
+            </p>
+          )}
+          {film.festival === "submitted" && (
+            <p className={styles.festivalLine}>SUBMITTED TO THE MERIDIAN — SCREENS IN SPRING</p>
+          )}
           <div className={styles.windows}>
             {windows.map((w, i) => {
               const comp = game.rivals.flatMap((r) =>
@@ -503,6 +575,14 @@ function Post({ game, film, onBack, onSchedule }: Props) {
                     f.releaseSeason.season === w.season,
                 ),
               ).length;
+              // projected opening in THIS window, all else equal
+              const windowEst = estimateOutcomes(
+                { ...draft, release: { season: w, strategy, posture } },
+                director,
+                game.rivals,
+                game.trends,
+                franchiseOf(game, film),
+              );
               return (
                 <button
                   key={i}
@@ -512,7 +592,9 @@ function Post({ game, film, onBack, onSchedule }: Props) {
                   <b>
                     {SEASON_NAMES[w.season].toUpperCase()} ’{String(w.year).padStart(2, "0")}
                   </b>
-                  <span>×{TUNING.seasonMult[w.season]} box office</span>
+                  <span>
+                    ×{TUNING.seasonMult[w.season]} · median {fmtMoney(windowEst.money.median)}
+                  </span>
                   <span className={cx(comp > 0 && styles.compWarn)}>
                     {comp === 0 ? "clear window" : `${comp} rival release${comp > 1 ? "s" : ""}`}
                   </span>
@@ -536,16 +618,20 @@ function Post({ game, film, onBack, onSchedule }: Props) {
               />
             )}
             <Button
-              onClick={() => onSchedule(dr, marketing, chosen, strategy)}
-              disabled={game.studio.cash < cost}
+              onClick={() => onSchedule(dr, marketing, chosen, strategy, posture)}
+              disabled={!canAfford(game, cost)}
             >
               LOCK THE DATE ▸
             </Button>
           </div>
         </Panel>
+        <button className={styles.abandon} onClick={onAbandon}>
+          SHELVE IT — WRITE OFF {fmtMoney(film.talentCost + film.budget + film.overruns)}
+        </button>
       </div>
       <div className={styles.right}>
         <DistributionPanel estimate={estimate} />
+        <Commitments game={game} film={film} overrides={{ marketing: cost }} />
         <Panel>
           <VisionMeter
             value={filmVision(draft)}
@@ -561,11 +647,11 @@ function Post({ game, film, onBack, onSchedule }: Props) {
 
 // ---------------------------------------------------------------- other stages
 
-function Status({ game, film, onBack }: Props) {
-  const director = directorOf(game, film);
+function Status({ game, film, onBack, onAbandon }: Props) {
+  const director = perceivedDirector(game, directorOf(game, film));
   const estimate = useMemo(
-    () => estimateOutcomes(film, director, game.rivals),
-    [film, director, game.rivals],
+    () => estimateOutcomes(film, director, game.rivals, game.trends, franchiseOf(game, film)),
+    [film, director, game.rivals, game.trends],
   );
   return (
     <div className={styles.grid}>
@@ -598,6 +684,11 @@ function Status({ game, film, onBack }: Props) {
             </ul>
           )}
         </Panel>
+        {(film.stage === "production" || film.stage === "post") && (
+          <button className={styles.abandon} onClick={onAbandon}>
+            SHUT IT DOWN — WRITE OFF {fmtMoney(film.talentCost + film.budget + film.overruns)}
+          </button>
+        )}
       </div>
       <div className={styles.right}>
         <DistributionPanel estimate={estimate} />
@@ -617,10 +708,15 @@ function Status({ game, film, onBack }: Props) {
 function Header({ film, onBack }: { film: Film; onBack: () => void }) {
   return (
     <div className={styles.header}>
-      <div>
-        <span className={styles.genre}>{GENRE_LABELS[film.genre].toUpperCase()}</span>
+      <div className={styles.headerLeft}>
+        <span className={styles.genre} style={{ color: genreColor(film.genre) }}>
+          {GENRE_LABELS[film.genre].toUpperCase()}
+        </span>
         <h2 className={styles.title}>{film.title}</h2>
         {film.directorName && <span className={styles.dirLine}>dir. {film.directorName}</span>}
+        <div className={styles.headerPips}>
+          <StagePips film={film} needsAction={!!filmNeedsAction(film)} />
+        </div>
       </div>
       <Button variant="secondary" onClick={onBack}>
         ← Slate

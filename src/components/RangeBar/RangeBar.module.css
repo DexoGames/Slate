@@ -51,11 +51,19 @@
     overflow: hidden;
 }
 
+.whisker {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    opacity: 0.3;
+    transition: left 0.25s ease, width 0.25s ease;
+}
+
 .box {
     position: absolute;
     top: 2px;
     bottom: 2px;
-    opacity: 0.55;
+    opacity: 0.6;
     transition: left 0.25s ease, width 0.25s ease;
 }
 
@@ -74,6 +82,15 @@
     top: 0;
     bottom: 0;
     border: 1px dashed var(--line-strong);
+    transition: left 0.25s ease, width 0.25s ease;
+}
+
+.ghostWhisker {
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    border-top: 1px dashed var(--line-strong);
+    border-bottom: 1px dashed var(--line-strong);
     transition: left 0.25s ease, width 0.25s ease;
 }
 

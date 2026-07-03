@@ -17,6 +17,13 @@ remembers the film at all.
   matter what it grossed. The legacy roll's variance cannot be reduced by anything —
   the safest films are the least likely to be remembered.
 
+The world pushes back: genres run hot and cold, franchises trade box-office safety for
+ratcheting expectations and audience fatigue, auteurs demand passion-project promises
+(in writing) before touching a sequel, hype sets the bar a film is judged against,
+festivals sell critic heat at the price of a season, contracted stars hold out when
+their quote outgrows the paper, and scandals ask whether you stand by people or by
+the investment. Nothing on the slate can be fully optimised. That is the point.
+
 ## Stack
 
 React 18 + Vite + TypeScript (strict), CSS Modules, no runtime dependencies beyond React.
@@ -34,9 +41,11 @@ npm run sim       # policy-bot balance harness — prints the tuning table
 
 - `src/engine/` — pure, React-free game logic. Every formula's constants are in
   `engine/tuning.ts`: that file is the balance dial panel.
-- `src/engine/sim/` — headless bots (max-safety / max-vision / balanced) that play whole
-  campaigns through the real reducer; the assertions in `balance.test.ts` are the design
-  contract (no dominant strategy, double-high acclaim stays rare, safety starves legacy).
+- `src/engine/sim/` — headless bots (max-safety / max-vision / balanced / selective-deny /
+  franchise-farmer / hype-abuser) that play whole campaigns through the real reducer; the
+  assertions in `balance.test.ts` and `features.test.ts` are the design contract (no
+  dominant strategy, double-high acclaim stays rare, safety starves legacy, franchise
+  fatigue binds, EVENT-posture hype is punished on under-delivery).
 - `src/state/` — the reducer, persistence, and the `useGame` hook.
 - `src/screens/`, `src/components/` — UI, one folder per component, CSS Modules, visual
   identity shared with [dexo.games](https://www.dexo.games).

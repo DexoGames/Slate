@@ -1,6 +1,103 @@
-import { GENRE_NORMS } from "./tuning";
-import type { Actor, CastRole, CastSlot, Demand, Director, Film, GameState, Script } from "./types";
+import { GENRE_NORMS, TUNING } from "./tuning";
+import type {
+  Actor,
+  CastRole,
+  CastSlot,
+  Demand,
+  DemandEffects,
+  Director,
+  Film,
+  GameState,
+  Genre,
+  Script,
+} from "./types";
 import { chance, int, makeId, makeRng, pick, range, type Rng } from "./rng";
+
+/**
+ * Genre-flavoured creative demands. Each has its own risk signature: some buy
+ * execution for money, some buy ceiling for variance, some trade the crowd
+ * floor for legacy fuel. Weights lean 2–3 — these are the hills people die on.
+ */
+interface CraftDemandDef {
+  genres: Genre[];
+  label: string;
+  detail: string;
+  effects: DemandEffects;
+  baseWeight: number;
+}
+
+const CRAFT_DEMANDS: CraftDemandDef[] = [
+  {
+    genres: ["horror", "scifi", "action"],
+    label: "Practical effects only",
+    detail: "“If it isn't on set, it isn't in the movie.”",
+    effects: { e: 4, cost: 4, sigma: 2 },
+    baseWeight: 1.6,
+  },
+  {
+    genres: ["musical"],
+    label: "Live singing on set",
+    detail: "“Lip-sync is for cowards and award shows.”",
+    effects: { a: 5, x: -4, sigma: 4 },
+    baseWeight: 1.8,
+  },
+  {
+    genres: ["action", "war"],
+    label: "Real stunt unit, no digital doubles",
+    detail: "“The audience can smell a render farm.”",
+    effects: { e: 5, cost: 6, weatherRisk: true },
+    baseWeight: 1.6,
+  },
+  {
+    genres: ["drama", "war", "romance"],
+    label: "Shoot on location",
+    detail: "“You cannot fake weather, and weather is the co-star.”",
+    effects: { a: 5, cost: 5, weatherRisk: true },
+    baseWeight: 1.4,
+  },
+  {
+    genres: ["drama", "crime"],
+    label: "Unknown faces in the leads",
+    detail: "“Stars bring their baggage into every frame.”",
+    effects: { a: 4, x: -6, sigma: 4 },
+    baseWeight: 1.9,
+  },
+  {
+    genres: ["drama", "crime", "war"],
+    label: "The two-and-a-half-hour cut",
+    detail: "“It earns its length. Mostly.”",
+    effects: { a: 6, x: -5 },
+    baseWeight: 1.7,
+  },
+  {
+    genres: ["thriller", "horror", "scifi"],
+    label: "An ending people will argue about",
+    detail: "“Resolution is a consolation prize.”",
+    effects: { divisive: 15, x: -4, sigma: 2 },
+    baseWeight: 1.9,
+  },
+  {
+    genres: ["comedy", "romance"],
+    label: "Improv days in the schedule",
+    detail: "“The script is a suggestion the movie makes to itself.”",
+    effects: { x: 4, sigma: 3, cost: 2 },
+    baseWeight: 1.3,
+  },
+  {
+    genres: ["scifi", "family"],
+    label: "Original creature design, no market testing",
+    detail: "“A committee has never once drawn a good monster.”",
+    effects: { a: 4, e: 2, cost: 4, sigma: 2 },
+    baseWeight: 1.5,
+  },
+  {
+    genres: ["crime", "thriller"],
+    label: "Real city permits, night shoots",
+    detail: "“Backlots look like backlots.”",
+    effects: { e: 3, cost: 3, weatherRisk: true },
+    baseWeight: 1.3,
+  },
+];
 
 interface IdBox {
   counter: number;
@@ -22,7 +119,9 @@ export function hashStr(s: string): number {
  */
 export function demandsFor(game: GameState, film: Film, director: Director): Demand[] {
   const rng = makeRng((game.seed ^ hashStr(film.id + director.id)) >>> 0);
-  return generateDemands(rng, { counter: 1 }, director, film.script, game.market.actors);
+  return generateDemands(rng, { counter: 1 }, director, film.script, game.market.actors, {
+    isSequel: !!film.franchiseId,
+  });
 }
 
 /** snapshot an actor into a cast slot, applying trait hooks at signing */
@@ -44,7 +143,37 @@ export function makeCastSlot(
     salary: Math.round(actor.salary * (1 - backendPct / 100) * 10) / 10,
     backendPoints: Math.round((backendPct / 100) * (actor.salary / 2) * 10) / 10,
   };
-  return { role, actorId: actor.id, actorName: actor.name, deal, againstType, appeal, craft };
+  return {
+    role,
+    actorId: actor.id,
+    actorName: actor.name,
+    deal,
+    againstType,
+    appeal,
+    craft,
+    range: actor.range,
+    fanbase: actor.fanbase,
+  };
+}
+
+/**
+ * Deterministic pairwise chemistry among the billed cast (leads count fully,
+ * supports half). Nobody knows it until they're on a set together.
+ */
+export function castChemistry(seed: number, cast: CastSlot[]): number {
+  let total = 0;
+  for (let i = 0; i < cast.length; i++) {
+    for (let j = i + 1; j < cast.length; j++) {
+      const a = cast[i];
+      const b = cast[j];
+      const key = [a.actorId, b.actorId].sort().join("|");
+      const h = hashStr(`${seed}:${key}`);
+      const val = ((h % 1000) / 1000) * 16 - 8; // -8..+8
+      const weight = a.role !== "support" && b.role !== "support" ? 1 : 0.5;
+      total += val * weight;
+    }
+  }
+  return Math.round(Math.max(-10, Math.min(10, total)));
 }
 
 /**
@@ -57,6 +186,7 @@ export function generateDemands(
   director: Director,
   script: Script,
   marketActors: Actor[],
+  opts: { isSequel?: boolean } = {},
 ): Demand[] {
   const demands: Demand[] = [];
   const norm = GENRE_NORMS[script.genre];
@@ -67,6 +197,18 @@ export function generateDemands(
     const v = base + auteur * 1.2 + range(rng, -0.5, 0.5);
     return v >= 2.5 ? 3 : v >= 1.5 ? 2 : 1;
   };
+
+  // an auteur only does your instalment if their weird thing gets made —
+  // deny this one and there is no deal at all
+  if (opts.isSequel && director.style > TUNING.franchise.auteurRefusalStyle) {
+    demands.push({
+      id: makeId(rng, ids.counter++, "dem"),
+      kind: "passion-project",
+      weight: 3,
+      label: "Greenlight my passion project",
+      detail: `“I'll do your sequel. In exchange, the studio greenlights MY film — the one nobody else will touch — within ${TUNING.franchise.passionDeadlineYears} years. In writing.”`,
+    });
+  }
 
   // budget floor — almost everyone has one
   if (chance(rng, 0.85)) {
@@ -136,6 +278,17 @@ export function generateDemands(
     }
   }
 
+  // a festival premiere — critic heat before release, at the cost of a season
+  if (chance(rng, Math.max(0, auteur - 0.45) * 0.7 + (director.traits.includes("festival-darling") ? 0.25 : 0))) {
+    demands.push({
+      id: makeId(rng, ids.counter++, "dem"),
+      kind: "festival-premiere",
+      weight: w(1.2),
+      label: "Premiere at the Meridian",
+      detail: "“This film needs a room that watches films, before it meets people who merely see them.”",
+    });
+  }
+
   // no test screenings
   if (chance(rng, auteur * 0.4)) {
     demands.push({
@@ -160,6 +313,25 @@ export function generateDemands(
     });
   }
 
+  // one or two genre-flavoured craft demands — the hills people die on
+  const pool = CRAFT_DEMANDS.filter((c) => c.genres.includes(script.genre));
+  const nCraft = pool.length === 0 ? 0 : chance(rng, 0.45 + auteur * 0.3) ? (chance(rng, 0.3) ? 2 : 1) : 0;
+  const used = new Set<string>();
+  for (let i = 0; i < nCraft; i++) {
+    const candidates = pool.filter((c) => !used.has(c.label));
+    if (candidates.length === 0) break;
+    const def = pick(rng, candidates);
+    used.add(def.label);
+    demands.push({
+      id: makeId(rng, ids.counter++, "dem"),
+      kind: "craft-demand",
+      weight: w(def.baseWeight),
+      label: def.label,
+      detail: def.detail,
+      effects: def.effects,
+    });
+  }
+
   return demands;
 }
 
@@ -168,6 +340,8 @@ export function generateDemands(
  * actually do it; most people grumble and take the job.
  */
 export function walkAwayRisk(director: Director, denied: Demand[]): number {
+  // the passion project is the price of the sequel, not a preference
+  if (denied.some((d) => d.kind === "passion-project")) return 1;
   const heavy = denied.filter((d) => d.weight === 3).length;
   const medium = denied.filter((d) => d.weight === 2).length;
   let risk = heavy * 0.25 + medium * 0.06;

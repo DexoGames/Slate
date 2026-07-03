@@ -58,6 +58,17 @@ export function computeLatent(film: Film, director: Director): Latent {
   if (script.writerId === director.id) synergy += t.synergyWriterDirector;
   if (director.traits.includes("perfectionist")) synergy += 3;
 
+  // granted craft demands shift the latent components directly
+  let demandE = 0;
+  let demandA = 0;
+  let demandX = 0;
+  for (const d of film.demands) {
+    if (!d.granted || !d.demand.effects) continue;
+    demandE += d.demand.effects.e ?? 0;
+    demandA += d.demand.effects.a ?? 0;
+    demandX += d.demand.effects.x ?? 0;
+  }
+
   const E = clamp(
     t.eWeights.craft * director.craft * genreFit +
       t.eWeights.cast * (castCraft + actorsBonus) +
@@ -65,17 +76,26 @@ export function computeLatent(film: Film, director: Director): Latent {
       t.eWeights.budget * budgetAdequacy +
       t.eWeights.schedule * scheduleAdequacy +
       synergy +
+      demandE +
+      film.castChemistry * 0.5 +
       film.productionBonus -
       film.productionPenalty,
   );
 
   // ----- A: ambition
-  const againstType = film.cast.some((c) => c.role !== "support" && c.againstType);
+  // against-type payoffs scale with the actor's RANGE: a chameleon against
+  // type is a prestige play, a one-note star against type is a meme
+  const againstSlot = film.cast.find((c) => c.role !== "support" && c.againstType);
+  const rangeFactor = againstSlot
+    ? Math.min(1.3, againstSlot.range / t.rangePivot)
+    : 0;
   const A = clamp(
     t.aWeights.script * script.ambition +
       t.aWeights.vision * director.vision * auteurLean(director.style) +
       t.aWeights.writer * script.ambition * 0.5 + // writer's thumbprint survives via the script
-      t.aWeights.againstType * (againstType ? t.againstTypeBonusValue : 0),
+      t.aWeights.againstType * t.againstTypeBonusValue * rangeFactor +
+      demandA +
+      film.castChemistry * 0.3,
   );
 
   // ----- X: accessibility
@@ -83,12 +103,20 @@ export function computeLatent(film: Film, director: Director): Latent {
   const familiar = 100 - Math.abs(50 - script.hook) * 0.4; // mid-high hook concepts feel familiar
   const notes = film.deRisking.notesImplemented;
   const notesBonus = notes === "none" ? 0 : t.notesXBonus[notes];
+  // low-range against-type casting alienates the crowd
+  const rangeXPenalty =
+    againstSlot && againstSlot.range < t.rangePivot
+      ? (t.rangePivot - againstSlot.range) / 6
+      : 0;
   const X = clamp(
     t.xWeights.hook * script.hook +
       t.xWeights.crowdLean * crowdLean(director.style) * 100 +
       t.xWeights.appeal * leadAppeal +
       t.xWeights.familiar * familiar +
       notesBonus +
+      demandX +
+      film.castChemistry * 0.4 -
+      rangeXPenalty +
       (director.traits.includes("crowd-whisperer") ? 4 : 0),
   );
 

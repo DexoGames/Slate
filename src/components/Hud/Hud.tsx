@@ -1,8 +1,10 @@
 import type { GameState } from "../../engine/types";
+import { studioBrand } from "../../engine/publicity";
 import { prestigeTier } from "../../engine/score";
 import { IconCritic, IconCrowd, IconLegacy, IconMoney } from "../../icons";
 import { fmtMoney, fmtSeason } from "../../lib/format";
 import { cx } from "../../lib/cx";
+import { Ticker } from "../Ticker/Ticker";
 import styles from "./Hud.module.css";
 
 export function Hud({
@@ -15,17 +17,24 @@ export function Hud({
   onDashboard: () => void;
 }) {
   const { studio, clock } = game;
+  const inDebt = studio.cash < 0;
   const low = studio.cash < 10;
   return (
     <header className={styles.hud}>
       <button className={styles.brand} onClick={onDashboard}>
         SLATE<span className={styles.accent}>.</span>
       </button>
-      <div className={styles.studio}>{studio.name}</div>
+      <div className={styles.studio}>
+        {studio.name}
+        <em className={styles.brand} title="Your brand — what the town thinks you're for">
+          {studioBrand(game).label}
+        </em>
+      </div>
       <div className={styles.stats}>
         <span className={cx(styles.stat, styles.cash, low && styles.low)}>
           <IconMoney size={14} />
-          {fmtMoney(studio.cash)}
+          <Ticker value={studio.cash} format={fmtMoney} />
+          {inDebt && <em className={styles.debtTag}>DEBT</em>}
         </span>
         <span className={styles.stat} title="Crowd reputation">
           <IconCrowd size={14} />

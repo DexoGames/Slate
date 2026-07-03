@@ -12,6 +12,9 @@
 .right {
     position: sticky;
     top: calc(var(--hud-h) + 16px);
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
 }
 
 .head {
@@ -97,6 +100,18 @@
     color: var(--bone-dim);
 }
 
+.fanChip,
+.rangeChip {
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--bone-dim);
+    border: 1px solid var(--line-strong);
+    padding: 1px 5px;
+    white-space: nowrap;
+    cursor: help;
+}
+
 .against {
     display: inline-flex;
     align-items: center;
@@ -159,6 +174,21 @@
 .unpick {
     border-color: var(--orange);
     color: var(--orange);
+}
+
+.contract {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--bone-dim);
+    cursor: pointer;
+}
+
+.contract input {
+    accent-color: var(--orange);
 }
 
 .dealRow {

@@ -54,6 +54,30 @@
     transition: width 0.25s ease;
 }
 
+.crack {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    background: var(--danger);
+    animation: crackOff 0.7s ease forwards;
+}
+
+@keyframes crackOff {
+    0% {
+        opacity: 1;
+        background: var(--cream);
+    }
+
+    35% {
+        opacity: 1;
+        background: var(--danger);
+    }
+
+    100% {
+        opacity: 0;
+    }
+}
+
 .gate {
     position: absolute;
     top: -2px;
