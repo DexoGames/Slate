@@ -67,7 +67,29 @@ export function Casting({
   const roleTaken = (role: CastRole) =>
     role !== "support" && Object.values(picks).includes(role);
 
-  const sorted = [...game.market.actors].sort((a, b) => b.fame - a.fame);
+  // most useful casting first: whoever the director asked for, then names you
+  // already hold, then genre fits, then raw star power
+  const genre = film.genre;
+  const scored = game.market.actors
+    .map((a) => {
+      const attached = a.id === attachedDemand;
+      const contracted = !!game.studio.contracts[a.id];
+      const suited = a.typecast.includes(genre);
+      return {
+        a,
+        attached,
+        contracted,
+        suited,
+        marquee: a.fame >= 75,
+        score:
+          (attached ? 10000 : 0) +
+          (contracted ? 4000 : 0) +
+          (suited ? 1500 : 0) +
+          a.fame * 5 +
+          a.appeal,
+      };
+    })
+    .sort((x, y) => y.score - x.score);
 
   return (
     <div className={styles.grid}>
@@ -86,22 +108,49 @@ export function Casting({
             role. Cast them, or this deal collapses.
           </Panel>
         )}
+        <p className={styles.hint}>
+          Sorted by fit — the director's pick, then names you hold, then faces the
+          crowd ties to {GENRE_LABELS[genre]}. Bars are appeal vs craft; stars are box-office pull.
+        </p>
         <div className={styles.actors}>
-          {sorted.map((a) => {
+          {scored.map(({ a, attached, contracted, suited, marquee }) => {
             const picked = picks[a.id];
-            const against = !a.typecast.includes(film.genre) && !a.traits.includes("chameleon");
+            const against = !suited && !a.traits.includes("chameleon");
             const backend = backendPct[a.id] ?? 0;
-            const isAttached = a.id === attachedDemand;
+            const stars = Math.max(1, Math.round(a.fame / 20));
             return (
-              <Panel key={a.id} className={cx(styles.card, picked && styles.picked)}>
+              <Panel
+                key={a.id}
+                className={cx(
+                  styles.card,
+                  marquee && styles.marquee,
+                  attached && styles.attachedCard,
+                  picked && styles.picked,
+                )}
+              >
+                {(attached || contracted || suited) && (
+                  <span
+                    className={cx(
+                      styles.ribbon,
+                      attached
+                        ? styles.ribbonWanted
+                        : contracted
+                          ? styles.ribbonOwned
+                          : styles.ribbonSuit,
+                    )}
+                  >
+                    {attached
+                      ? "★ DIRECTOR WANTS THEM"
+                      : contracted
+                        ? "UNDER CONTRACT"
+                        : `SUITS ${GENRE_LABELS[genre].toUpperCase()}`}
+                  </span>
+                )}
                 <div className={styles.cardHead}>
                   <div>
                     <h4 className={styles.name}>
+                      {marquee && <span className={styles.star}>★ </span>}
                       {a.name}
-                      {isAttached && <span className={styles.attached}> · ATTACHED</span>}
-                      {game.studio.contracts[a.id] && (
-                        <span className={styles.attached}> · UNDER CONTRACT</span>
-                      )}
                     </h4>
                     <span className={styles.arch}>{a.archetype}</span>
                   </div>
@@ -110,27 +159,33 @@ export function Casting({
                   </span>
                 </div>
                 <DualBar a={a.appeal} b={a.craft} aLabel="Appeal" bLabel="Craft" />
-                <div className={styles.metaRow}>
-                  <span className={styles.typecast}>
-                    {a.typecast.map((g) => GENRE_LABELS[g]).join(" · ")}
+                <div className={styles.starRow} title={`Star power — fame ${a.fame}`}>
+                  <span className={styles.starRowLabel}>STAR</span>
+                  <span className={styles.starPips}>
+                    {Array.from({ length: 5 }, (_, i) => (
+                      <i key={i} className={cx(styles.starPip, i < stars && styles.starPipOn)} />
+                    ))}
                   </span>
-                  <span className={styles.fanChip} title={`Fanbase: ${a.fanbase} · career: ${careerPhase(a)}`}>
+                  <span className={styles.fanTag}>
                     {a.fanbase.toUpperCase()} · {careerPhase(a).toUpperCase()}
                   </span>
                 </div>
                 <div className={styles.metaRow}>
+                  <span className={styles.typecast}>
+                    {a.typecast.map((g) => GENRE_LABELS[g]).join(" · ")}
+                  </span>
                   <span className={styles.rangeChip} title="Range — how well they play against type">
                     RANGE {a.range}
                   </span>
-                  {against && (
-                    <span
-                      className={styles.against}
-                      title={`Against type: wider outcomes; payoff scales with range (${a.range})`}
-                    >
-                      <IconDice size={11} /> AGAINST TYPE
-                    </span>
-                  )}
                 </div>
+                {against && (
+                  <span
+                    className={styles.against}
+                    title={`Against type: wider outcomes; payoff scales with range (${a.range})`}
+                  >
+                    <IconDice size={11} /> AGAINST TYPE
+                  </span>
+                )}
                 {a.traits.length > 0 && (
                   <div className={styles.traits}>
                     {a.traits.map((t) => (
@@ -229,6 +284,7 @@ export function Casting({
             />
           )}
           <Button
+            variant="spend"
             onClick={() => onCast(cast, [...contractIds])}
             disabled={!hasLead || !attachedSatisfied || !canAfford(game, totalSalary)}
           >

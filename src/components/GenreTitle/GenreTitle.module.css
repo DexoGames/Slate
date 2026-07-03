@@ -1,0 +1,84 @@
+/* Base: display fallback, left-anchored so per-genre spacing doesn't drift.
+   Every genre face is bold and upright — no italics, no skew — so titles stay
+   legible from across the room. */
+.title {
+    font-family: var(--font-display);
+    display: inline-block;
+    transform-origin: left center;
+    line-height: 1.04;
+    max-width: 100%;
+}
+
+/* Refined high-contrast serif — prestige. */
+.drama {
+    font-family: var(--font-genre-drama);
+    letter-spacing: 0.005em;
+    line-height: 1.12;
+}
+
+/* Fat and rounded — a grin. */
+.comedy {
+    font-family: var(--font-genre-comedy);
+    letter-spacing: 0.005em;
+    line-height: 1.1;
+}
+
+/* Tall, tense, industrial caps. */
+.thriller {
+    font-family: var(--font-genre-thriller);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+}
+
+/* Rough, vintage, uneasy. */
+.horror {
+    font-family: var(--font-genre-horror);
+    letter-spacing: 0.01em;
+    line-height: 1.18;
+}
+
+/* Massive heavy slab — impact. */
+.action {
+    font-family: var(--font-genre-action);
+    letter-spacing: 0.004em;
+}
+
+/* Square engineered caps. */
+.scifi {
+    font-family: var(--font-genre-scifi);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Graceful display serif. */
+.romance {
+    font-family: var(--font-genre-romance);
+    letter-spacing: 0.01em;
+    line-height: 1.14;
+}
+
+/* Distressed noir typewriter. */
+.crime {
+    font-family: var(--font-genre-crime);
+    letter-spacing: 0.04em;
+}
+
+/* Rounded, friendly. */
+.family {
+    font-family: var(--font-genre-family);
+    letter-spacing: 0.01em;
+}
+
+/* Monumental military stencil. */
+.war {
+    font-family: var(--font-genre-war);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Bold upright marquee blocks. */
+.musical {
+    font-family: var(--font-genre-musical);
+    letter-spacing: 0.01em;
+    line-height: 1.22;
+}

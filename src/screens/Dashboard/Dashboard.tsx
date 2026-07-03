@@ -1,5 +1,6 @@
 import { Panel, SectionTitle, StatChip } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
+import { GenreTitle } from "../../components/GenreTitle/GenreTitle";
 import { StagePips } from "../../components/StagePips/StagePips";
 import { VisionMeter } from "../../components/VisionMeter/VisionMeter";
 import { creditLeft, interestDue } from "../../engine/economy";
@@ -67,7 +68,9 @@ export function Dashboard({
               >
                 {need && <span className={styles.needBadge}>{need}</span>}
                 <StagePips film={f} needsAction={!!need} />
-                <span className={styles.cardTitle}>{f.title}</span>
+                <GenreTitle genre={f.genre} className={styles.cardTitle}>
+                  {f.title}
+                </GenreTitle>
                 <span className={styles.meta}>
                   <b style={{ color: genreColor(f.genre) }}>{GENRE_LABELS[f.genre]}</b>
                   {f.directorName ? ` · ${f.directorName}` : ""}

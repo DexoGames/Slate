@@ -49,7 +49,50 @@
 }
 
 .picked {
-    border-color: var(--orange);
+    border-color: var(--velvet);
+    box-shadow: inset 0 0 0 1px var(--velvet);
+}
+
+/* a marquee star carries more presence — plum crown, brighter surface */
+.marquee {
+    border-color: var(--velvet);
+    box-shadow: inset 0 3px 0 var(--velvet);
+    background: linear-gradient(180deg, var(--velvet-veil), transparent 55%), var(--black-soft);
+}
+
+/* the one the director asked for — a gold-lit must-cast */
+.attachedCard {
+    border-color: var(--gold);
+    box-shadow: inset 0 3px 0 var(--gold);
+}
+
+.star {
+    color: var(--velvet);
+}
+
+/* relevance ribbon: why this face is near the top */
+.ribbon {
+    align-self: flex-start;
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    padding: 2px 7px;
+}
+
+.ribbonWanted {
+    background: var(--gold);
+    color: var(--gold-ink);
+}
+
+.ribbonOwned {
+    background: var(--velvet);
+    color: var(--velvet-ink);
+}
+
+.ribbonSuit {
+    background: var(--stat-money);
+    color: var(--stat-money-ink);
 }
 
 .cardHead {
@@ -67,9 +110,50 @@
     color: var(--bone);
 }
 
-.attached {
-    color: var(--orange);
-    font-size: 0.6rem;
+.marquee .name {
+    font-size: 1.02rem;
+}
+
+/* star-power pips */
+.starRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.starRowLabel {
+    flex: 0 0 auto;
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--bone-dim);
+}
+
+.starPips {
+    display: inline-flex;
+    gap: 3px;
+}
+
+.starPip {
+    width: 9px;
+    height: 9px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-strong);
+    transform: rotate(45deg);
+}
+
+.starPipOn {
+    background: var(--velvet);
+    border-color: var(--velvet);
+}
+
+.fanTag {
+    margin-left: auto;
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    color: var(--bone-dim);
+    white-space: nowrap;
 }
 
 .arch {
@@ -113,6 +197,7 @@
 }
 
 .against {
+    align-self: flex-start;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -121,6 +206,8 @@
     letter-spacing: 0.08em;
     color: var(--gold);
     white-space: nowrap;
+    border: 1px solid rgba(232, 185, 35, 0.4);
+    padding: 2px 6px;
 }
 
 .traits {

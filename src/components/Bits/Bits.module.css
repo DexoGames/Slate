@@ -21,6 +21,63 @@
     color: var(--bone-dim);
 }
 
+/* --- single stat / estimate bars (StatBar, BandBar) --- */
+.bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.barLabel {
+    flex: 0 0 66px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--bone-dim);
+}
+
+.barTrack {
+    position: relative;
+    flex: 1;
+    height: 9px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-on-black);
+    overflow: hidden;
+}
+
+.barFill {
+    height: 100%;
+    transition: width 0.2s ease;
+}
+
+.bandFuzz {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    opacity: 0.28;
+    transition: left 0.2s ease, width 0.2s ease;
+}
+
+.bandTick {
+    position: absolute;
+    top: -1px;
+    bottom: -1px;
+    width: 3px;
+    margin-left: -1px;
+    transition: left 0.2s ease;
+}
+
+.barVal {
+    flex: 0 0 26px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-align: right;
+}
+
 .dual {
     display: flex;
     flex-direction: column;

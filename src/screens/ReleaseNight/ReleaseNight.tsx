@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Button } from "../../components/Button/Button";
+import { GenreTitle } from "../../components/GenreTitle/GenreTitle";
 import { VERDICT_LABELS } from "../../engine/release";
 import type { Film } from "../../engine/types";
 import { IconCritic, IconCrowd, IconLegacy } from "../../icons";
@@ -50,7 +51,9 @@ export function ReleaseNight({ film, onDone }: { film: Film; onDone: () => void 
       <p className={cx(styles.kicker, styles.in)}>
         {isStreaming ? "NOW STREAMING" : "OPENING NIGHT"}
       </p>
-      <h1 className={cx(styles.marquee, styles.in)}>{film.title}</h1>
+      <GenreTitle as="h1" genre={film.genre} className={cx(styles.marquee, styles.in)}>
+        {film.title}
+      </GenreTitle>
 
       {stage >= 1 && (
         <div className={cx(styles.money, styles.in)}>

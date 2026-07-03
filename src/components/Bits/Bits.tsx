@@ -25,6 +25,85 @@ export function StatChip({
   );
 }
 
+/** a single labelled magnitude bar — the workhorse for "compare this stat across
+ *  ten boxes at a glance" (craft, appeal, fame, fit …). Colour carries meaning. */
+export function StatBar({
+  label,
+  value,
+  max = 100,
+  color = "var(--bone)",
+  icon,
+  hint,
+}: {
+  label: string;
+  value: number;
+  max?: number;
+  color?: string;
+  icon?: ReactNode;
+  hint?: string;
+}) {
+  const pct = Math.max(0, Math.min(100, (value / max) * 100));
+  return (
+    <div className={styles.bar} title={hint ?? label}>
+      <span className={styles.barLabel}>
+        {icon}
+        {label}
+      </span>
+      <div className={styles.barTrack}>
+        <div className={styles.barFill} style={{ width: `${pct}%`, background: color }} />
+      </div>
+      <b className={styles.barVal} style={{ color }}>
+        {Math.round(value)}
+      </b>
+    </div>
+  );
+}
+
+/** a bar carrying an *estimate* and its uncertainty: a faded band shows the
+ *  range the town might be wrong by (narrower the better you know them), a solid
+ *  tick marks the best guess. Says "this is a guess" visually, so no card has to
+ *  print the word every time. */
+export function BandBar({
+  label,
+  est,
+  band,
+  color = "var(--bone)",
+  max = 100,
+  icon,
+  hint,
+}: {
+  label: string;
+  est: number;
+  band: number;
+  color?: string;
+  max?: number;
+  icon?: ReactNode;
+  hint?: string;
+}) {
+  const clamp = (n: number) => Math.max(0, Math.min(max, n));
+  const p = (v: number) => (clamp(v) / max) * 100;
+  const lo = p(est - band);
+  const hi = p(est + band);
+  return (
+    <div className={styles.bar} title={hint ?? `${label} — the town's estimate`}>
+      <span className={styles.barLabel}>
+        {icon}
+        {label}
+      </span>
+      <div className={styles.barTrack}>
+        <div
+          className={styles.bandFuzz}
+          style={{ left: `${lo}%`, width: `${Math.max(2, hi - lo)}%`, background: color }}
+        />
+        <div className={styles.bandTick} style={{ left: `${p(est)}%`, background: color }} />
+      </div>
+      <b className={styles.barVal} style={{ color }}>
+        ~{Math.round(est)}
+      </b>
+    </div>
+  );
+}
+
 /** the appeal-vs-craft double bar that makes every actor's trade-off legible */
 export function DualBar({
   a,

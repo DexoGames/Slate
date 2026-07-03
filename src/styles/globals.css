@@ -1,60 +1,92 @@
 :root {
-    /* --- single fixed palette (shared with dexo.games for visual consistency) --- */
-    --orange: #ff5a36;
-    --orange-deep: #cf4a25;
-    --orange-ink: #2a0f06; /* text on orange */
-    --orange-rgb: 255, 90, 54; /* same colour as --orange, as r, g, b for rgba() */
+    /* --- brand: "Velvet Rope" — deep red-carpet crimson, premiere-night warmth ---
+       The primary accent. A rich curtain-red, leaned slightly toward wine so it
+       stays distinct from the alarm-red danger and the orange crowd stat. */
+    --velvet: #c02a44;
+    --velvet-deep: #7d1628;
+    --velvet-bright: #e24a63; /* hover / active highlight */
+    --velvet-ink: #fff1ef; /* light text on velvet */
+    --velvet-rgb: 192, 42, 68;
+    --velvet-veil: rgba(192, 42, 68, 0.16); /* faint fills / selected states */
 
-    --black: #0d0d0d;
-    --black-soft: #171717; /* raised surfaces on black */
-    --black-soft-2: #1f1f1f; /* second-level raised surface */
-    --cream: #ece6db; /* warm paper */
-    --cream-soft: #e2dccf; /* alt paper / raised surfaces on cream */
+    /* Legacy brand aliases — the codebase says `--orange` in ~60 places to mean
+       "brand accent". Repointed to velvet so the whole app re-skins from here.
+       (The crowd STAT keeps its own warm hue via --stat-crowd below.) */
+    --orange: var(--velvet);
+    --orange-deep: var(--velvet-deep);
+    --orange-ink: var(--velvet-ink);
+    --orange-rgb: var(--velvet-rgb);
 
-    --ink: #14130f; /* text on cream */
-    --ink-dim: #6b6657; /* muted text on cream */
-    --bone: #ece6db; /* text on black */
-    --bone-dim: #8f897c; /* muted text on black */
+    /* --- warm dark base: espresso & oxblood, not neutral black ---
+       Reads like a dim premiere house — dark browns warmed from the top by
+       stage light, never a cold tech black. */
+    --black: #170d0a; /* warm near-black (espresso) */
+    --black-soft: #241512; /* raised surfaces — warm cocoa */
+    --black-soft-2: #31201b; /* second-level raised surface */
+    --cream: #f0e9db; /* warm paper */
+    --cream-soft: #e6dccb; /* alt paper / raised surfaces on cream */
 
-    --line-on-cream: rgba(20, 19, 15, 0.12);
-    --line-on-black: rgba(236, 230, 219, 0.10);
-    --line-strong: rgba(236, 230, 219, 0.22);
+    --ink: #1a130d; /* text on cream */
+    --ink-dim: #74685a; /* muted text on cream */
+    --bone: #f0e9db; /* text on dark */
+    --bone-dim: #a2907f; /* muted text on dark — warm taupe */
 
-    /* gold award accent */
-    --gold: #e8b923;
-    --gold-ink: #3a2a02; /* text on gold */
+    --line-on-cream: rgba(26, 19, 13, 0.12);
+    --line-on-black: rgba(240, 233, 219, 0.10);
+    --line-strong: rgba(240, 233, 219, 0.22);
+
+    /* gold award accent — the yellow of the palette, used as a real block fill */
+    --gold: #f0b429;
+    --gold-ink: #3a2602; /* text on gold */
+    --gold-deep: #b3811a;
 
     /* --- the four stat axes: used EVERYWHERE, never re-mapped --- */
-    --stat-money: #2fe089; /* box office / cash */
-    --stat-money-ink: #06301c;
-    --stat-crowd: #ff5a36; /* mainstream acclaim */
+    --stat-money: #1f9d55; /* box office / cash — deep bill-green, reserved for money */
+    --stat-money-ink: #eafff2;
+    --stat-crowd: #ff6a3d; /* mainstream acclaim — warm ticket-orange */
     --stat-crowd-ink: #2a0f06;
     --stat-critic: #3aabff; /* critical / arty acclaim */
     --stat-critic-ink: #06263a;
-    --stat-legacy: #e8b923; /* legacy (gold) */
-    --stat-legacy-ink: #3a2a02;
+    --stat-legacy: #f0b429; /* legacy (gold) */
+    --stat-legacy-ink: #3a2602;
 
     /* vision preservation is cream — it visibly chips away */
-    --vision: #ece6db;
-    --danger: #e0442f; /* bankruptcy, COMPROMISED stamps */
+    --vision: #f0e9db;
+    --danger: #e8502f; /* bankruptcy, COMPROMISED stamps — orange alarm-red */
 
-    /* --- genre accents: semantic colour, distinct from the stat axes --- */
-    --g-drama: #7ba8a0;
-    --g-comedy: #ffc83a;
-    --g-thriller: #a48ae0;
-    --g-horror: #8f3fae;
-    --g-action: #e0442f;
-    --g-scifi: #46d4c8;
-    --g-romance: #ef7bae;
-    --g-crime: #9a4a32;
-    --g-family: #7bd06a;
-    --g-war: #7a8552;
-    --g-musical: #e09b3f;
+    /* --- genre accents: bold semantic colour, distinct from the stat axes --- */
+    --g-drama: #7ec6b8; /* teal */
+    --g-comedy: #ffc83a; /* sunflower */
+    --g-thriller: #b083f0; /* violet */
+    --g-horror: #9a3fb0; /* purple */
+    --g-action: #ff5a2c; /* blaze orange */
+    --g-scifi: #35d6c6; /* cyan */
+    --g-romance: #ff85b3; /* rose */
+    --g-crime: #c98a4a; /* tobacco */
+    --g-family: #6fc95f; /* leaf */
+    --g-war: #a3a35a; /* olive */
+    --g-musical: #ffa63d; /* amber */
 
     --font-display: "Archivo Black", "Arial Black", system-ui, sans-serif;
     --font-mono: "JetBrains Mono", ui-monospace, "Courier New", monospace;
 
+    /* --- per-genre display faces — each genre gets an unmistakable but legible
+       voice: bold, upright (no italics), readable from across the room. Crime and
+       family kept from the original set; the rest are heavier, cleaner faces. */
+    --font-genre-drama: "DM Serif Display", Georgia, serif;
+    --font-genre-comedy: "Titan One", var(--font-display);
+    --font-genre-thriller: "Oswald", var(--font-display);
+    --font-genre-horror: "Rye", var(--font-display);
+    --font-genre-action: "Alfa Slab One", var(--font-display);
+    --font-genre-scifi: "Russo One", var(--font-display);
+    --font-genre-romance: "Yeseva One", Georgia, serif;
+    --font-genre-crime: "Special Elite", var(--font-mono);
+    --font-genre-family: "Fredoka", var(--font-display);
+    --font-genre-war: "Black Ops One", var(--font-display);
+    --font-genre-musical: "Bungee", var(--font-display);
+
     --radius: 0px; /* everything is square */
+    --notch: 9px; /* corner cut on commit/spend buttons — a distinct SHAPE from square nav */
 
     --maxw: 1280px; /* app shell width */
     --hud-h: 56px; /* fixed top HUD height */
@@ -74,7 +106,10 @@ html {
 
 body {
     font-family: var(--font-mono);
-    background: var(--black);
+    /* warm stage light spilling from the top edge — like house lights on a
+       red curtain: a deep oxblood glow fading into espresso dark */
+    background: radial-gradient(125% 90% at 50% -20%, #3a1210 0%, var(--black) 58%) fixed;
+    background-color: var(--black);
     color: var(--bone);
     line-height: 1.6;
     overflow-x: hidden;
@@ -111,6 +146,95 @@ body {
     font-family: "JetBrains Mono";
     src: url("/fonts/jetbrains-mono-700.woff2") format("woff2");
     font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+/* --- per-genre display faces (SIL OFL, self-hosted) --- */
+@font-face {
+    font-family: "DM Serif Display";
+    src: url("/fonts/g-drama-dmserif.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Titan One";
+    src: url("/fonts/g-comedy-titanone.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Oswald";
+    src: url("/fonts/g-thriller-oswald.woff2") format("woff2");
+    font-weight: 700;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Rye";
+    src: url("/fonts/g-horror-rye.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Alfa Slab One";
+    src: url("/fonts/g-action-alfaslab.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Russo One";
+    src: url("/fonts/g-scifi-russoone.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Yeseva One";
+    src: url("/fonts/g-romance-yeseva.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Special Elite";
+    src: url("/fonts/g-crime-specialelite.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Fredoka";
+    src: url("/fonts/g-family-fredoka.woff2") format("woff2");
+    font-weight: 600;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Black Ops One";
+    src: url("/fonts/g-war-blackopsone.woff2") format("woff2");
+    font-weight: 400;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: "Bungee";
+    src: url("/fonts/g-musical-bungee.woff2") format("woff2");
+    font-weight: 400;
     font-style: normal;
     font-display: swap;
 }

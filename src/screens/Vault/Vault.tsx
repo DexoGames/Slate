@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Panel, SectionTitle } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
+import { GenreTitle } from "../../components/GenreTitle/GenreTitle";
 import { VisionMeter } from "../../components/VisionMeter/VisionMeter";
 import { legacyTierLabel } from "../../engine/legacy";
 import { VERDICT_LABELS } from "../../engine/release";
@@ -54,7 +55,7 @@ export function Vault({
                 <IpBar label="EXPECTATION" value={ip.expectation} color="var(--stat-crowd)" />
                 <IpBar label="FATIGUE" value={ip.fatigue} color="var(--danger)" />
                 <Button
-                  variant="secondary"
+                  variant="spendMinor"
                   onClick={() => onDevelopSequel(ip.id)}
                   disabled={game.studio.cash < TUNING.franchise.sequelScriptCost - 25}
                 >
@@ -83,7 +84,9 @@ export function Vault({
                 ’{String(f.release?.season.year ?? 0).padStart(2, "0")} ·{" "}
                 <b style={{ color: genreColor(f.genre) }}>{GENRE_LABELS[f.genre].toUpperCase()}</b>
               </span>
-              <span className={styles.posterTitle}>{f.title}</span>
+              <GenreTitle genre={f.genre} className={styles.posterTitle}>
+                {f.title}
+              </GenreTitle>
               {f.awards.length > 0 && (
                 <span className={styles.awards}>
                   <IconTrophy size={11} /> {f.awards.length}
@@ -163,7 +166,9 @@ function PostMortem({ film, year, onClose }: { film: Film; year: number; onClose
       <div className={styles.sheet} onClick={(e) => e.stopPropagation()}>
         <div className={styles.sheetHead}>
           <div>
-            <h3 className={styles.sheetTitle}>{film.title}</h3>
+            <GenreTitle as="h3" genre={film.genre} className={styles.sheetTitle}>
+              {film.title}
+            </GenreTitle>
             <span className={styles.sheetMeta}>
               dir. {film.directorName} · {GENRE_LABELS[film.genre]} · {VERDICT_LABELS[r.verdict]}
             </span>

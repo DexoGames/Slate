@@ -2,7 +2,20 @@ import type { ButtonHTMLAttributes, ReactNode } from "react";
 import { cx } from "../../lib/cx";
 import styles from "./Button.module.css";
 
-type Variant = "primary" | "secondary";
+/**
+ * The button design language:
+ *  - primary     commit / permanent action (velvet block, cut corner)
+ *  - spend       the headline money action on a screen — greenlight, buy, sign
+ *                (solid green block, cut corner; money is green everywhere)
+ *  - spendMinor an optional/secondary money spend that shares a screen with a
+ *                headline spend — e.g. a rewrite pass next to GREENLIGHT
+ *                (green ghost outline, fills on hover; keeps green meaning money
+ *                but stops every spend from shouting equally)
+ *  - secondary   navigation / reversible (square ghost outline)
+ *  - danger      destructive / writes off value (red)
+ * Shape carries meaning: actions have a notched corner, navigation stays square.
+ */
+type Variant = "primary" | "spend" | "spendMinor" | "secondary" | "danger";
 
 interface CommonProps {
   variant?: Variant;
@@ -25,8 +38,8 @@ interface ActionProps
 type ButtonProps = LinkProps | ActionProps;
 
 /**
- * Brutalist button shared with the dexo.games look. Renders an <a> when given an
- * `href`, otherwise a real <button> (so it can drive clicks/forms in the game).
+ * Brutalist button. Renders an <a> when given an `href`, otherwise a real
+ * <button> (so it can drive clicks/forms in the game).
  */
 export function Button(props: ButtonProps) {
   const { variant = "primary", className, children } = props;

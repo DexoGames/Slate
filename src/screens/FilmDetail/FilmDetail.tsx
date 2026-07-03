@@ -3,6 +3,7 @@ import { Panel, SectionTitle, StatChip } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
 import { Commitments } from "../../components/Commitments/Commitments";
 import { DistributionPanel } from "../../components/DistributionPanel/DistributionPanel";
+import { GenreTitle } from "../../components/GenreTitle/GenreTitle";
 import { VisionMeter } from "../../components/VisionMeter/VisionMeter";
 import { StagePips } from "../../components/StagePips/StagePips";
 import { canAfford, estimateCommitments } from "../../engine/economy";
@@ -125,14 +126,14 @@ function Development({
           </div>
           <div className={styles.rewriteRow}>
             <Button
-              variant="secondary"
+              variant="spendMinor"
               onClick={() => onRewrite(false)}
               disabled={!canAfford(game, TUNING.rewriteCostOriginal)}
             >
               NOTES PASS · {fmtMoney(TUNING.rewriteCostOriginal)}
             </Button>
             <Button
-              variant="secondary"
+              variant="spendMinor"
               onClick={() => onRewrite(true)}
               disabled={!canAfford(game, TUNING.rewriteCostFixer)}
             >
@@ -233,6 +234,7 @@ function Development({
               color="var(--stat-money)"
             />
             <Button
+              variant="spend"
               onClick={() => onGreenlight(budget, days, bond)}
               disabled={!canGreenlight || !canAfford(game, total)}
             >
@@ -553,7 +555,7 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
             </span>
           </div>
           {game.clock.season === 0 && !film.festival && (
-            <Button variant="secondary" onClick={onFestival}>
+            <Button variant="spendMinor" onClick={onFestival}>
               SUBMIT TO THE MERIDIAN FESTIVAL · {fmtMoney(t.festival.entryCost)} (screens in spring)
             </Button>
           )}
@@ -618,6 +620,7 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
               />
             )}
             <Button
+              variant="spend"
               onClick={() => onSchedule(dr, marketing, chosen, strategy, posture)}
               disabled={!canAfford(game, cost)}
             >
@@ -712,7 +715,9 @@ function Header({ film, onBack }: { film: Film; onBack: () => void }) {
         <span className={styles.genre} style={{ color: genreColor(film.genre) }}>
           {GENRE_LABELS[film.genre].toUpperCase()}
         </span>
-        <h2 className={styles.title}>{film.title}</h2>
+        <GenreTitle as="h2" genre={film.genre} className={styles.title}>
+          {film.title}
+        </GenreTitle>
         {film.directorName && <span className={styles.dirLine}>dir. {film.directorName}</span>}
         <div className={styles.headerPips}>
           <StagePips film={film} needsAction={!!filmNeedsAction(film)} />

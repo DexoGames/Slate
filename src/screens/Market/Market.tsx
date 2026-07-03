@@ -1,5 +1,6 @@
 import { Panel, SectionTitle } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
+import { GenreTitle } from "../../components/GenreTitle/GenreTitle";
 import { canAfford, scriptAllIn } from "../../engine/economy";
 import { GENRE_LABELS } from "../../engine/tuning";
 import { genreColor } from "../../lib/genreColor";
@@ -23,7 +24,14 @@ export function Market({
   onBuyIP: (ipId: string) => void;
   onBack: () => void;
 }) {
-  const scripts = [...game.market.scripts].sort((a, b) => b.buzz - a.buzz);
+  // most relevant first: scripts you owe a greenlight on, then what the market
+  // wants right now, then raw buzz
+  const promisedIds = new Set(game.studio.promises.map((p) => p.scriptId));
+  const rank = (s: Script) =>
+    (promisedIds.has(s.id) ? 10000 : 0) +
+    (s.genre === game.trends.hot || s.subGenre === game.trends.hot ? 400 : 0) +
+    s.buzz;
+  const scripts = [...game.market.scripts].sort((a, b) => rank(b) - rank(a));
   return (
     <div>
       <div className={styles.head}>
@@ -40,13 +48,19 @@ export function Market({
                 {l.ip.kind === "remake" ? "REMAKE RIGHTS" : "ADAPTATION RIGHTS"} ·{" "}
                 <b style={{ color: genreColor(l.ip.genre) }}>{GENRE_LABELS[l.ip.genre].toUpperCase()}</b>
               </span>
-              <h4 className={styles.title}>{l.ip.name}</h4>
+              <GenreTitle as="h4" genre={l.ip.genre} className={styles.title}>
+                {l.ip.name}
+              </GenreTitle>
               <p className={styles.logline}>{l.blurb}</p>
               <span className={styles.ipStats}>
                 AWARENESS {l.ip.awareness} · FANS EXPECT {l.ip.expectation}
                 {l.ip.fatigue > 0 && ` · FATIGUE ${l.ip.fatigue}`}
               </span>
-              <Button onClick={() => onBuyIP(l.ip.id)} disabled={!canAfford(game, l.price)}>
+              <Button
+                variant="spendMinor"
+                onClick={() => onBuyIP(l.ip.id)}
+                disabled={!canAfford(game, l.price)}
+              >
                 {fmtMoney(l.price)}
               </Button>
             </Panel>
@@ -142,7 +156,9 @@ function ScriptCard({
           )
         )}
       </div>
-      <h4 className={styles.title}>{script.title}</h4>
+      <GenreTitle as="h4" genre={script.genre} className={styles.title}>
+        {script.title}
+      </GenreTitle>
       <p className={styles.logline}>{script.logline}</p>
       <div className={styles.axes}>
         <div className={styles.axis} title="Hook — commercial concept strength">
@@ -171,7 +187,7 @@ function ScriptCard({
         <span className={styles.allIn} title="Rough total cost to make and release a film in this genre">
           ALL-IN ~{fmtMoney(allIn)}
         </span>
-        <Button className={styles.buy} onClick={onBuy} disabled={!affordable}>
+        <Button variant="spendMinor" className={styles.buy} onClick={onBuy} disabled={!affordable}>
           {fmtMoney(script.askingPrice)}
         </Button>
       </div>

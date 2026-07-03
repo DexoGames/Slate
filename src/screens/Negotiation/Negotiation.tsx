@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { TRAIT_LABELS } from "../../data/archetypes";
-import { Panel, SectionTitle, StatChip, Weight } from "../../components/Bits/Bits";
+import { BandBar, Panel, SectionTitle, StatBar, StatChip, Weight } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
 import { Commitments } from "../../components/Commitments/Commitments";
 import { DistributionPanel } from "../../components/DistributionPanel/DistributionPanel";
@@ -25,6 +25,7 @@ import {
   IconMoney,
   IconPalette,
   IconPopcorn,
+  IconReel,
   IconWarning,
 } from "../../icons";
 import { fmtMoney } from "../../lib/format";
@@ -58,33 +59,6 @@ export function Negotiation({
   );
 }
 
-/**
- * What the town THINKS they're worth. A fuzzy band that tightens the better
- * you know them — the true numbers are never shown.
- */
-function Reputation({ game, director }: { game: GameState; director: Director }) {
-  const rep = reputationOf(game, director);
-  const band = (est: number) =>
-    `${Math.max(0, est - rep.band)}–${Math.min(100, est + rep.band)}`;
-  return (
-    <>
-      <StatChip
-        icon={<IconDirector size={12} />}
-        value={`≈${band(rep.craftEst)}`}
-        label="craft rep."
-        title={rep.familiarity > 0.6 ? "You know this one well" : "Reputation — the town could be wrong"}
-      />
-      <StatChip
-        icon={<IconPalette size={12} />}
-        value={`≈${band(rep.visionEst)}`}
-        label="vision rep."
-        color="var(--stat-legacy)"
-        title={rep.familiarity > 0.6 ? "You know this one well" : "Reputation — the town could be wrong"}
-      />
-    </>
-  );
-}
-
 function effectsLine(e: DemandEffects): string {
   const parts: string[] = [];
   if (e.e) parts.push(`${e.e > 0 ? "+" : ""}${e.e} exec`);
@@ -97,17 +71,24 @@ function effectsLine(e: DemandEffects): string {
   return parts.join(" · ");
 }
 
-function StyleAxis({ style }: { style: number }) {
+/** where a director sits on crowd-pleaser ↔ auteur — a small lean, not a headline */
+function StyleLean({ style }: { style: number }) {
+  const lean =
+    style <= -34
+      ? { label: "CROWD-PLEASER", icon: <IconPopcorn size={11} /> }
+      : style >= 34
+        ? { label: "AUTEUR", icon: <IconPalette size={11} /> }
+        : { label: "VERSATILE", icon: <IconReel size={11} /> };
   return (
-    <div className={styles.styleAxis} title="Crowd-pleaser ↔ auteur">
-      <IconPopcorn size={14} />
-      <div className={styles.styleTrack}>
-        <div className={styles.styleDot} style={{ left: `${((style + 100) / 200) * 100}%` }} />
-      </div>
-      <IconPalette size={14} />
-    </div>
+    <span className={styles.lean} title={`Crowd-pleaser ↔ auteur (${style})`}>
+      {lean.icon}
+      {lean.label}
+    </span>
   );
 }
+
+const fitColor = (fit: number) =>
+  fit >= 65 ? "var(--stat-money)" : fit >= 45 ? "var(--bone)" : "var(--bone-dim)";
 
 function DirectorList({
   game,
@@ -121,45 +102,96 @@ function DirectorList({
   onBack: () => void;
 }) {
   const tier = prestigeTier(game.studio.legacyPoints);
-  const sorted = [...game.market.directors].sort(
-    (a, b) => (b.genres[film.genre] ?? 0) - (a.genres[film.genre] ?? 0),
-  );
+  const genre = film.genre;
+
+  // most relevant first: who you can act on now, best fit for THIS genre, then craft
+  const scored = game.market.directors
+    .map((d) => {
+      const rep = reputationOf(game, d);
+      const fit = d.genres[genre] ?? 40;
+      const locked = d.minTier > tier;
+      const affordable = canAfford(game, d.salary);
+      return {
+        d,
+        rep,
+        fit,
+        locked,
+        affordable,
+        actionable: !locked && affordable,
+        marquee: rep.craftEst >= 72 || rep.visionEst >= 75,
+      };
+    })
+    .sort((a, b) => {
+      if (a.actionable !== b.actionable) return a.actionable ? -1 : 1;
+      if (b.fit !== a.fit) return b.fit - a.fit;
+      return b.rep.craftEst - a.rep.craftEst;
+    });
+
   return (
     <div>
       <div className={styles.head}>
         <SectionTitle>
-          A DIRECTOR FOR “{film.title.toUpperCase()}” · {GENRE_LABELS[film.genre].toUpperCase()}
+          A DIRECTOR FOR “{film.title.toUpperCase()}” · {GENRE_LABELS[genre].toUpperCase()}
         </SectionTitle>
         <Button variant="secondary" onClick={onBack}>
           ← Film
         </Button>
       </div>
+      <p className={styles.legend}>
+        Bars are the town's read — the faded band is how unsure they are. You only
+        learn the truth by working with them. Best fits for {GENRE_LABELS[genre]} come first.
+      </p>
       <div className={styles.grid}>
-        {sorted.map((d) => {
+        {scored.map(({ d, rep, fit, locked, marquee }) => {
           // auteurs take sequels only if their passion project is part of the deal
           const wantsPassion =
             !!film.franchiseId && d.style > TUNING.franchise.auteurRefusalStyle;
-          const locked = d.minTier > tier;
           return (
-            <Panel key={d.id} className={cx(styles.card, locked && styles.locked)}>
+            <Panel
+              key={d.id}
+              className={cx(styles.card, marquee && styles.marquee, locked && styles.locked)}
+            >
               <div className={styles.cardHead}>
+                {marquee && <span className={styles.star} title="Marquee name">★</span>}
                 <IconDirector size={16} />
                 <div>
                   <h4 className={styles.name}>{d.name}</h4>
                   <span className={styles.arch}>{d.archetype}</span>
                 </div>
-                <span className={styles.salary}>{fmtMoney(d.salary)}</span>
-              </div>
-              <StyleAxis style={d.style} />
-              <div className={styles.statRow}>
-                <Reputation game={game} director={d} />
-                <StatChip icon={<IconDice size={12} />} value={d.volatility} label="chaos" />
                 <StatChip
-                  icon={<span className={styles.fit} />}
-                  value={d.genres[film.genre] ?? 40}
-                  label={GENRE_LABELS[film.genre]}
-                  color={(d.genres[film.genre] ?? 40) >= 65 ? "var(--stat-money)" : undefined}
+                  icon={<IconMoney size={12} />}
+                  value={fmtMoney(d.salary)}
+                  color="var(--stat-money)"
                 />
+              </div>
+              <div className={styles.bars}>
+                <StatBar
+                  label={GENRE_LABELS[genre]}
+                  value={fit}
+                  color={fitColor(fit)}
+                  icon={<span className={styles.fitDot} style={{ background: fitColor(fit) }} />}
+                  hint={`Genre fit for ${GENRE_LABELS[genre]}`}
+                />
+                <BandBar
+                  label="Craft"
+                  est={rep.craftEst}
+                  band={rep.band}
+                  color="var(--cream)"
+                  hint="Craft — the town's estimate; the faded band is their uncertainty"
+                />
+                <BandBar
+                  label="Vision"
+                  est={rep.visionEst}
+                  band={rep.band}
+                  color="var(--stat-legacy)"
+                  hint="Vision — the town's estimate; the faded band is their uncertainty"
+                />
+              </div>
+              <div className={styles.tagRow}>
+                <StyleLean style={d.style} />
+                <span className={styles.chaos} title="Chaos — how wide their outcomes swing">
+                  <IconDice size={11} /> CHAOS {d.volatility}
+                </span>
               </div>
               {d.traits.length > 0 && (
                 <div className={styles.traits}>
@@ -333,8 +365,12 @@ function DemandSheet({
                 label="budget floor"
               />
             )}
-            <Button onClick={() => onSign(decisions)} disabled={!canAfford(game, director.salary)}>
-              SIGN {director.name.split(" ")[0].toUpperCase()}
+            <Button
+              variant="spend"
+              onClick={() => onSign(decisions)}
+              disabled={!canAfford(game, director.salary)}
+            >
+              SIGN {director.name.split(" ")[0].toUpperCase()} · {fmtMoney(director.salary)}
             </Button>
           </div>
         </Panel>
