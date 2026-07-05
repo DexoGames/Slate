@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Panel, SectionTitle, StatChip } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
 import { Commitments } from "../../components/Commitments/Commitments";
@@ -10,7 +10,14 @@ import { canAfford, estimateCommitments } from "../../engine/economy";
 import { estimateOutcomes } from "../../engine/distribution";
 import { franchiseOf } from "../../engine/franchise";
 import { filmNeedsAction } from "../../engine/needs";
-import { perceivedDirector } from "../../engine/perception";
+import { perceivedDirector, perceivedFilm } from "../../engine/perception";
+import {
+  BUDGET_CLASS_LABELS,
+  budgetClass,
+  isUnhurried,
+  minBudgetFor,
+  schedulePressure,
+} from "../../engine/schedule";
 import { directorOf } from "../../engine/season";
 import { GENRE_LABELS, GENRE_NORMS, TUNING } from "../../engine/tuning";
 import { computeHype } from "../../engine/publicity";
@@ -48,6 +55,7 @@ interface Props {
   onNegotiate: () => void;
   onCasting: () => void;
   onRewrite: (byFixer: boolean) => void;
+  onRename: (title: string) => void;
   onAbandon: () => void;
   onGreenlight: (budget: number, days: number, bond: boolean) => void;
   onSchedule: (
@@ -76,6 +84,7 @@ function Development({
   onNegotiate,
   onCasting,
   onRewrite,
+  onRename,
   onAbandon,
   onGreenlight,
 }: Props) {
@@ -84,9 +93,18 @@ function Development({
     ?.demand.budgetFloor;
   const minDays = film.demands.find((d) => d.granted && d.demand.kind === "shooting-days")
     ?.demand.days;
-  const [budget, setBudget] = useState(() => Math.max(film.budget, floor ?? 0));
   const [days, setDays] = useState(() => Math.max(film.shootingDays, minDays ?? 0));
+  // the schedule + the script's own scale set the cheapest a film can be made (§1, §4)
+  const minBudget = Math.ceil(minBudgetFor(film.genre, days, film.script.budgetTarget));
+  const [budget, setBudget] = useState(() => Math.max(film.budget, floor ?? 0, minBudget));
   const [bond, setBond] = useState(false);
+
+  // moving the days slider can raise the budget floor — pull budget up to meet it
+  const changeDays = (d: number) => {
+    setDays(d);
+    const mb = Math.ceil(minBudgetFor(film.genre, d, film.script.budgetTarget));
+    if (budget < mb) setBudget(mb);
+  };
 
   const draft = useMemo(
     () => ({ ...film, budget, shootingDays: days }),
@@ -94,9 +112,12 @@ function Development({
   );
   const director = perceivedDirector(game, directorOf(game, film));
   const estimate = useMemo(
-    () => estimateOutcomes(draft, director, game.rivals, game.trends, franchiseOf(game, film)),
-    [draft, director, game.rivals, game.trends],
+    () => estimateOutcomes(perceivedFilm(game, draft), director, game.rivals, game.trends, franchiseOf(game, film)),
+    [draft, director, game],
   );
+  const pressure = schedulePressure(draft);
+  const unhurried = isUnhurried(draft);
+  const extraSeason = days >= norm.days * TUNING.schedule.longScheduleExtraSeasonAt;
 
   const bondCost = bond ? Math.round(budget * TUNING.completionBondPct * 10) / 10 : 0;
   const canGreenlight = !!film.directorId && film.cast.length > 0;
@@ -112,7 +133,7 @@ function Development({
   return (
     <div className={styles.grid}>
       <div className={styles.left}>
-        <Header film={film} onBack={onBack} />
+        <Header film={film} onBack={onBack} budget={budget} onRename={onRename} />
         <Panel className={styles.block}>
           <SectionTitle>
             <IconScript size={12} /> SCRIPT
@@ -195,13 +216,13 @@ function Development({
           <SliderRow
             label="BUDGET"
             value={budget}
-            min={Math.max(2, Math.round(norm.budget * 0.3))}
+            min={Math.max(2, minBudget)}
             max={Math.round(norm.budget * 2.2)}
             step={1}
-            onChange={setBudget}
+            onChange={(v) => setBudget(Math.max(v, minBudget))}
             fmt={(v) => fmtMoney(v)}
             marks={[
-              { at: norm.budget, label: "genre norm" },
+              { at: film.script.budgetTarget, label: "script wants" },
               ...(floor ? [{ at: floor, label: "promised floor" }] : []),
             ]}
             floor={floor}
@@ -212,7 +233,7 @@ function Development({
             min={Math.round(norm.days * 0.5)}
             max={Math.round(norm.days * 1.5)}
             step={1}
-            onChange={setDays}
+            onChange={changeDays}
             fmt={(v) => `${v}d`}
             marks={[
               { at: norm.days, label: "genre norm" },
@@ -220,6 +241,21 @@ function Development({
             ]}
             floor={minDays}
           />
+          {/* always rendered with reserved height so the crunch/unhurried note
+              never pushes GREENLIGHT down when it appears (§UI) */}
+          <p
+            className={cx(
+              styles.scheduleHint,
+              pressure > 0 && styles.crunchHint,
+              pressure <= 0 && unhurried && styles.unhurriedHint,
+            )}
+          >
+            {pressure > 0
+              ? `⚠ CRUNCH · +${Math.round(pressure * 25)}% event risk · wider outcome roll`
+              : unhurried
+                ? `UNHURRIED · steadier roll · develops young talent${extraSeason ? " · +1 season in production" : ""}`
+                : " "}
+          </p>
           <label className={styles.bond}>
             <input type="checkbox" checked={bond} onChange={(e) => setBond(e.target.checked)} />
             <IconShield size={13} />
@@ -369,8 +405,8 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
   const hype = computeHype(draft, posture, marketing, franchiseOf(game, film));
   const director = perceivedDirector(game, directorOf(game, film));
   const estimate = useMemo(
-    () => estimateOutcomes(draft, director, game.rivals, game.trends, franchiseOf(game, film)),
-    [draft, director, game.rivals, game.trends],
+    () => estimateOutcomes(perceivedFilm(game, draft), director, game.rivals, game.trends, franchiseOf(game, film)),
+    [draft, director, game],
   );
 
   const t = TUNING;
@@ -436,7 +472,7 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
           <div className={styles.tools}>
             {tool(
               "TEST SCREENING",
-              "Watch a mall audience watch your film. Information only.",
+              "Watch a mall audience watch your film — reveals how the shoot actually turned out, so the forecast stops guessing.",
               dr.testScreeningHeld,
               noTests,
               () =>
@@ -478,7 +514,7 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
               )}
             {tool(
               "STUDIO RESHOOTS",
-              "Fix it in more photography.",
+              "Fix a shoot that went sideways — pulls the film back toward the plan.",
               dr.studioReshoots,
               false,
               () => setDr({ ...dr, studioReshoots: !dr.studioReshoots }),
@@ -579,7 +615,7 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
               ).length;
               // projected opening in THIS window, all else equal
               const windowEst = estimateOutcomes(
-                { ...draft, release: { season: w, strategy, posture } },
+                perceivedFilm(game, { ...draft, release: { season: w, strategy, posture } }),
                 director,
                 game.rivals,
                 game.trends,
@@ -653,8 +689,8 @@ function Post({ game, film, onBack, onSchedule, onAbandon, onFestival }: Props) 
 function Status({ game, film, onBack, onAbandon }: Props) {
   const director = perceivedDirector(game, directorOf(game, film));
   const estimate = useMemo(
-    () => estimateOutcomes(film, director, game.rivals, game.trends, franchiseOf(game, film)),
-    [film, director, game.rivals, game.trends],
+    () => estimateOutcomes(perceivedFilm(game, film), director, game.rivals, game.trends, franchiseOf(game, film)),
+    [film, director, game],
   );
   return (
     <div className={styles.grid}>
@@ -708,16 +744,99 @@ function Status({ game, film, onBack, onAbandon }: Props) {
   );
 }
 
-function Header({ film, onBack }: { film: Film; onBack: () => void }) {
+function Header({
+  film,
+  onBack,
+  budget,
+  onRename,
+}: {
+  film: Film;
+  onBack: () => void;
+  budget?: number;
+  onRename?: (title: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const rowRef = useRef<HTMLSpanElement>(null);
+  const canRename = !!onRename && film.stage === "development";
+  const cls = budgetClass(budget ?? film.budget);
+  const MAX_TITLE = 40;
+
+  // focus the editable title and drop the caret at the end when edit mode opens
+  useEffect(() => {
+    if (!editing) return;
+    const el = rowRef.current?.querySelector<HTMLElement>('[contenteditable="true"]');
+    if (!el) return;
+    el.focus();
+    const sel = window.getSelection();
+    sel?.selectAllChildren(el);
+    sel?.collapseToEnd();
+  }, [editing]);
+
+  const commit = (raw: string) => {
+    const t = raw.replace(/\s+/g, " ").trim().slice(0, MAX_TITLE);
+    if (t && t !== film.title) onRename?.(t);
+    setEditing(false);
+  };
+
   return (
     <div className={styles.header}>
       <div className={styles.headerLeft}>
         <span className={styles.genre} style={{ color: genreColor(film.genre) }}>
           {GENRE_LABELS[film.genre].toUpperCase()}
+          <span className={styles.budgetClass}>· {BUDGET_CLASS_LABELS[cls]}</span>
         </span>
-        <GenreTitle as="h2" genre={film.genre} className={styles.title}>
-          {film.title}
-        </GenreTitle>
+        <span className={styles.titleRow} ref={rowRef}>
+          {/* the title element itself becomes editable — same font, same place,
+              just a caret; no box, no reflow, capped at MAX_TITLE (§UI) */}
+          <GenreTitle
+            as="h2"
+            genre={film.genre}
+            className={cx(styles.title, editing && styles.titleEditing)}
+            contentEditable={editing || undefined}
+            suppressContentEditableWarning
+            spellCheck={false}
+            onInput={
+              editing
+                ? (e) => {
+                    const el = e.currentTarget;
+                    const text = el.textContent ?? "";
+                    if (text.length > MAX_TITLE) {
+                      el.textContent = text.slice(0, MAX_TITLE);
+                      const sel = window.getSelection();
+                      sel?.selectAllChildren(el);
+                      sel?.collapseToEnd();
+                    }
+                  }
+                : undefined
+            }
+            onKeyDown={
+              editing
+                ? (e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      commit(e.currentTarget.textContent ?? "");
+                    } else if (e.key === "Escape") {
+                      e.preventDefault();
+                      e.currentTarget.textContent = film.title;
+                      setEditing(false);
+                    }
+                  }
+                : undefined
+            }
+            onBlur={editing ? (e) => commit(e.currentTarget.textContent ?? "") : undefined}
+          >
+            {film.title}
+          </GenreTitle>
+          {canRename && !editing && (
+            <button
+              className={styles.renameBtn}
+              title="Rename this film"
+              onClick={() => setEditing(true)}
+            >
+              ✎
+            </button>
+          )}
+        </span>
         {film.directorName && <span className={styles.dirLine}>dir. {film.directorName}</span>}
         <div className={styles.headerPips}>
           <StagePips film={film} needsAction={!!filmNeedsAction(film)} />

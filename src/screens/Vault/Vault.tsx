@@ -5,6 +5,7 @@ import { GenreTitle } from "../../components/GenreTitle/GenreTitle";
 import { VisionMeter } from "../../components/VisionMeter/VisionMeter";
 import { legacyTierLabel } from "../../engine/legacy";
 import { VERDICT_LABELS } from "../../engine/release";
+import { BUDGET_CLASS_LABELS, budgetClass } from "../../engine/schedule";
 import { GENRE_LABELS, TUNING } from "../../engine/tuning";
 import type { Film, GameState } from "../../engine/types";
 import { filmVision } from "../../engine/vision";
@@ -83,6 +84,8 @@ export function Vault({
               <span className={styles.year}>
                 ’{String(f.release?.season.year ?? 0).padStart(2, "0")} ·{" "}
                 <b style={{ color: genreColor(f.genre) }}>{GENRE_LABELS[f.genre].toUpperCase()}</b>
+                {" · "}
+                {BUDGET_CLASS_LABELS[budgetClass(f.budget)]}
               </span>
               <GenreTitle genre={f.genre} className={styles.posterTitle}>
                 {f.title}

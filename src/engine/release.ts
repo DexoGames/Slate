@@ -1,4 +1,5 @@
 import { comboEffects } from "./generate/scripts";
+import { isUnhurried, schedulePressure } from "./schedule";
 import { GENRE_NORMS, TUNING } from "./tuning";
 import type {
   Director,
@@ -11,7 +12,33 @@ import type {
   RollModifier,
   Verdict,
 } from "./types";
-import { clamp, lognormalFactor, normal, type Rng } from "./rng";
+import { filmVision } from "./vision";
+import { chance, clamp, lognormalMeanOne, normal, type Rng } from "./rng";
+
+/**
+ * Streaming reach scales with theatrical footprint: a micro film collects only
+ * a fraction of the streaming a wide hit does. Shared by rollRelease and the
+ * forecast (distribution.ts) — the honesty contract (§HARD-5) forbids a second copy.
+ */
+export function streamingReach(boxOffice: number, normOpening: number): number {
+  const t = TUNING.streamingReach;
+  return t.base + t.scale * Math.min(1, boxOffice / (t.div * normOpening));
+}
+
+/**
+ * "The town's cut": the progressive windfall participation on a single film's
+ * profit. Monotonic and continuous, so distribution.ts can map each money
+ * quantile through it and preserve the ordering. Negative profit passes through.
+ */
+export function windfallNet(profit: number): { net: number; cut: number } {
+  const w = TUNING.windfall;
+  if (profit <= w.freeUpTo) return { net: profit, cut: 0 };
+  let net = w.freeUpTo;
+  net += (Math.min(profit, w.band1To) - w.freeUpTo) * w.band1Keep;
+  if (profit > w.band1To) net += (profit - w.band1To) * w.band2Keep;
+  net = Math.round(net * 10) / 10;
+  return { net, cut: Math.round((profit - net) * 10) / 10 };
+}
 
 /** the money-facing profile of a cast: fanbase-weighted appeal + leg/stream shifts */
 export interface CastProfile {
@@ -140,6 +167,40 @@ export function computeSpread(
     parts.push({ name: "Genre blend", value: shape.comboSigma });
   }
 
+  // a crunched schedule widens the roll; an unhurried one steadies it (§1)
+  const pressure = schedulePressure(film);
+  if (pressure > 0) {
+    const cs = Math.round(pressure * t.schedule.crunchSigma * 10) / 10;
+    sigma += cs;
+    parts.push({ name: "Crunch schedule", value: cs });
+  } else if (isUnhurried(film)) {
+    sigma += t.schedule.unhurriedSigma;
+    parts.push({ name: "Unhurried schedule", value: t.schedule.unhurriedSigma });
+  }
+
+  // no compromises at all = a wide, high-ceiling bet (§6)
+  if (filmVision(film) >= t.sigmaPureVisionAt) {
+    sigma += t.sigmaPureVision;
+    ceiling += t.ceilingPureVision;
+    parts.push({ name: "Uncompromised vision", value: t.sigmaPureVision });
+  }
+
+  // cast passion raises the ceiling only — what's possible, never guaranteed (§4)
+  if (film.cast.length > 0) {
+    let wsum = 0;
+    let wtot = 0;
+    for (const c of film.cast) {
+      const w = c.role === "lead" ? 0.6 : c.role === "colead" ? 0.25 : 0.15;
+      wsum += (c.passion ?? t.passion.base) * w;
+      wtot += w;
+    }
+    const bonus = Math.round((wsum / wtot / 100) * t.passion.ceilingBonus * 10) / 10;
+    if (bonus > 0) {
+      ceiling += bonus;
+      parts.push({ name: "Cast passion", value: bonus });
+    }
+  }
+
   let sigmaAcclaim = sigma;
   let sigmaMoney = sigma;
 
@@ -167,6 +228,19 @@ export function computeSpread(
   if (film.release?.strategy === "platform") {
     sigmaMoney += t.sigmaPlatformMoney;
     parts.push({ name: "Platform release", value: t.sigmaPlatformMoney });
+  }
+
+  // a cheap, low-wattage, unproven lead is a box-office gamble: will they draw?
+  // a bankable star buys that variance down (§3)
+  const leadSlot = film.cast.find((c) => c.role === "lead");
+  if (leadSlot) {
+    const appealShort = Math.max(0, t.star.reliableAppeal - leadSlot.appeal) / t.star.reliableAppeal;
+    const green = 1 - clamp(leadSlot.experience) / 100; // 0 veteran .. 1 unknown
+    const drawRisk = Math.round(appealShort * green * t.star.unprovenSigma * 10) / 10;
+    if (drawRisk > 0) {
+      sigmaMoney += drawRisk;
+      parts.push({ name: "Unproven draw", value: drawRisk });
+    }
   }
 
   // awareness IS safety: a known name narrows the money roll
@@ -291,7 +365,8 @@ export function rollRelease(
     // flat sale: safe, capped, soulless
     const revenue = Math.round(film.budget * t.streamingSaleMult * 10) / 10;
     const costs = film.budget + film.marketing + film.overruns + film.talentCost;
-    const profit = Math.round((revenue - costs) * 10) / 10;
+    const grossProfit = Math.round((revenue - costs) * 10) / 10;
+    const { net: profit, cut } = windfallNet(grossProfit);
     breakdown.push({
       label: "Streaming sale",
       base: revenue,
@@ -305,9 +380,11 @@ export function rollRelease(
       streaming: revenue,
       ancillary: 0,
       profit,
+      grossProfit,
+      windfallCut: cut,
       crowdScore,
       criticScore,
-      verdict: verdictFor(profit, film.budget, crowdScore, criticScore),
+      verdict: verdictFor(grossProfit, film.budget, crowdScore, criticScore),
       breakdown,
     };
   }
@@ -328,7 +405,24 @@ export function rollRelease(
   const comp = competitionCount(film, rivals);
   const competitionMult = Math.max(0.5, 1 - t.competitionPerRival * comp);
   const budgetScale = (film.budget / norm.budget) ** t.budgetExponent;
-  const noise = lognormalFactor(rng, spread.sigmaMoney / t.moneySigmaDiv);
+  // a small-canvas concept caps its own reach: throwing tentpole money at a
+  // scrappy script won't make it open like one (§4)
+  const sb = t.scriptBudget;
+  const canvasMult = sb.canvasBase + sb.canvasScale * clamp(film.script.budgetTarget / norm.budget, 0, 2);
+  // mean-1 noise: the upside is a real tail, not a systematic over-performance
+  const noise = lognormalMeanOne(rng, spread.sigmaMoney / t.moneySigmaDiv);
+
+  // the irreducible risk: even a perfectly de-risked film can crater for a
+  // reason nobody saw coming. Mitigation shrinks the odds but never to zero —
+  // this is the "you can't buy your way to a guaranteed hit" floor (§1). It is
+  // deliberately NOT in the forecast: it's the surprise the forecast can't sell.
+  const cat = t.catastrophe;
+  let catP = cat.base;
+  if (film.deRisking.completionBond) catP *= cat.bondMult;
+  if (film.deRisking.studioReshoots) catP *= cat.reshootMult;
+  if (isUnhurried(film)) catP *= cat.unhurriedMult;
+  const catastrophe = chance(rng, catP);
+  const catFactor = catastrophe ? cat.severity : 1;
 
   const tMult = trendMult(film, trends);
   const franchiseOpen = franchise
@@ -340,6 +434,7 @@ export function rollRelease(
   let opening =
     norm.opening *
     budgetScale *
+    canvasMult *
     appealMult *
     marketingMult *
     focusBonus *
@@ -349,7 +444,8 @@ export function rollRelease(
     franchiseOpen *
     hypeMult *
     brandFx.opening *
-    noise;
+    noise *
+    catFactor;
   if (strategy === "platform") {
     opening = Math.min(opening, norm.opening * t.platformOpeningCap);
   }
@@ -381,6 +477,7 @@ export function rollRelease(
     Math.round(
       (t.streamingBase + t.streamingAppeal * castAppeal + t.streamingCrowd * crowdScore) *
         streamMult *
+        streamingReach(boxOffice, norm.opening) *
         10,
     ) / 10;
   const ancillaryRate = t.ancillaryRate[film.genre] ?? 0;
@@ -395,7 +492,10 @@ export function rollRelease(
       .reduce((s, d) => s + (d.demand.points ?? 0), 0);
   const backendPay = Math.max(0, gross * (backendPoints / 100));
   const costs = film.budget + film.marketing + film.overruns + film.talentCost;
-  const profit = Math.round((gross - backendPay - costs) * 10) / 10;
+  const grossProfit = Math.round((gross - backendPay - costs) * 10) / 10;
+  // the town renegotiates when you're rich (§5) — applied last, so verdicts
+  // and franchise minting still read the pre-cut gross
+  const { net: profit, cut: windfallCut } = windfallNet(grossProfit);
 
   breakdown.push({
     label: "Opening weekend",
@@ -407,6 +507,9 @@ export function rollRelease(
       { name: "Competition", value: Math.round((competitionMult - 1) * 100) },
       { name: "Genre trend", value: Math.round((tMult - 1) * 100) },
       { name: "Franchise awareness", value: Math.round((franchiseOpen - 1) * 100) },
+      ...(catastrophe
+        ? [{ name: "Production catastrophe", value: -Math.round((1 - cat.severity) * 100) }]
+        : []),
     ],
     noise: Math.round((noise - 1) * 100),
     final: opening,
@@ -424,6 +527,9 @@ export function rollRelease(
     modifiers: [
       { name: "Backend points", value: -Math.round(backendPay) },
       { name: "Budget + marketing", value: -Math.round(costs) },
+      ...(windfallCut > 0
+        ? [{ name: "The town's cut", value: -Math.round(windfallCut) }]
+        : []),
     ],
     noise: 0,
     final: profit,
@@ -435,9 +541,11 @@ export function rollRelease(
     streaming,
     ancillary,
     profit,
+    grossProfit,
+    windfallCut,
     crowdScore,
     criticScore,
-    verdict: verdictFor(profit, film.budget, crowdScore, criticScore),
+    verdict: verdictFor(grossProfit, film.budget, crowdScore, criticScore),
     breakdown,
   };
 }

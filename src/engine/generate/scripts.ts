@@ -128,7 +128,17 @@ export function generateScript(
   );
   const askingPrice = Math.min(
     3.5,
-    Math.round((0.5 + (buzz / 100) * 2 + (writer.fame / 100) * 1) * 10) / 10,
+    // buzz-0 specs from unknowns can go near $0.3M — the micro-budget on-ramp (§2c)
+    Math.round((0.3 + (buzz / 100) * 2 + (writer.fame / 100) * 1) * 10) / 10,
+  );
+  // the concept's natural budget (§4): high-concept, hooky, ambitious scripts
+  // want a bigger canvas; small scrappy ones want less and cap lower on appeal
+  const bt = TUNING.scriptBudget;
+  const scaleFactor =
+    bt.floorFactor + (hook / 100) * bt.hookScale + (ambition / 100) * bt.ambitionScale + range(rng, -bt.jitter, bt.jitter);
+  const budgetTarget = Math.max(
+    TUNING.schedule.absoluteFloor,
+    Math.round(norm.budget * clamp(scaleFactor, bt.minFactor, bt.maxFactor) * 10) / 10,
   );
   return {
     id: makeId(rng, ids.counter++, "scr"),
@@ -140,6 +150,7 @@ export function generateScript(
     ambition,
     coherence,
     buzz,
+    budgetTarget,
     writerId: writer.id,
     writerName: writer.name,
     rewrites: [],

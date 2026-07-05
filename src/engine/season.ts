@@ -9,14 +9,16 @@ import {
   settleInstalment,
 } from "./franchise";
 import { runAwards } from "./awards";
-import { generateActor, generateDirector, generateWriter } from "./generate/people";
+import { generateActor, generateDirector, generateWriter, grownStat } from "./generate/people";
 import { generateScript } from "./generate/scripts";
-import { legacyPointsFor, legacyTierLabel, seedLegacy, tickLegacy } from "./legacy";
-import { computeLatent } from "./quality";
+import { legacyPointsFor, legacyTierLabel, resolveEpilogue, seedLegacy, tickLegacy } from "./legacy";
+import { pairChemistryValue, pairKey } from "./negotiation";
+import { computeLatent, rollShoot } from "./quality";
 import { rollRelease } from "./release";
 import { rivalBuysScript, tickRivals } from "./rivals";
-import { computeCampaignScore, productionSlots } from "./score";
-import { GENRE_LABELS, TUNING } from "./tuning";
+import { schedulePressure } from "./schedule";
+import { computeCampaignScore, prestigeTier, productionSlots, tierName } from "./score";
+import { GENRE_LABELS, GENRE_NORMS, TUNING } from "./tuning";
 import type {
   Director,
   Film,
@@ -51,6 +53,7 @@ export function directorOf(state: GameState, film: Film): Director {
     heat: 0,
     salary: 5,
     traits: [],
+    experience: 70, // a director who has left the pool is a known, seasoned hand
     craft: 65,
     vision: 55,
     style: 0,
@@ -77,10 +80,20 @@ function spawnProductionEvent(
   const weatherProne = film.demands.some(
     (d) => d.granted && d.demand.effects?.weatherRisk,
   );
+  const pressure = schedulePressure(film);
+  // the frostiest billed pairing on the film — feeds the bad-chemistry event (§7)
+  let worstPair = 0;
+  for (let i = 0; i < film.cast.length; i++) {
+    for (let j = i + 1; j < film.cast.length; j++) {
+      worstPair = Math.min(worstPair, pairChemistryValue(state, film.cast[i].actorId, film.cast[j].actorId));
+    }
+  }
   const eligible = PRODUCTION_EVENTS.filter((e) => {
     if (e.needsTemperament && temperament < e.needsTemperament && !feudy) return false;
     if (e.needsVolatility && director.volatility < e.needsVolatility) return false;
     if (e.bigBudgetOnly && film.budget < 60) return false;
+    if (e.crunchOnly && pressure < e.crunchOnly) return false;
+    if (e.needsBadChemistry !== undefined && worstPair > e.needsBadChemistry) return false;
     return !film.eventHistory.some((h) => h.eventId === e.id);
   });
   // location/stunt-heavy shoots double up on weather & logistics trouble
@@ -91,6 +104,7 @@ function spawnProductionEvent(
 
   let p = 0.55 + director.volatility / 300 + temperament / 400;
   if (director.traits.includes("over-budget")) p += 0.15;
+  p += pressure * TUNING.schedule.crunchEventP; // crunch invites disaster
   if (!chance(rng, Math.min(0.9, p))) return null;
 
   const def = pick(rng, weighted);
@@ -395,7 +409,19 @@ export function advanceSeason(state: GameState): GameState {
     if (film.stage === "production") {
       const left = film.stageSeasonsLeft - 1;
       if (left <= 0) {
-        s.films[id] = { ...film, stage: "post", stageSeasonsLeft: 0 };
+        // the shoot wraps: roll how principal photography went (§5) — a hidden
+        // swing to the film's true quality, on chemistry/passion/craft/luck
+        const shootDirector = directorOf(s, film);
+        let ws = 0;
+        let wt = 0;
+        for (const c of film.cast) {
+          const w = c.role === "lead" ? 0.6 : c.role === "colead" ? 0.25 : 0.15;
+          ws += (c.passion ?? TUNING.passion.base) * w;
+          wt += w;
+        }
+        const passionAvg = wt > 0 ? ws / wt : TUNING.passion.base;
+        const shoot = rollShoot(film, shootDirector, passionAvg, rng);
+        s.films[id] = { ...film, stage: "post", stageSeasonsLeft: 0, shoot };
         // a granted festival-premiere demand submits the cut the day post begins
         const wantsFestival = film.demands.some(
           (d) => d.granted && d.demand.kind === "festival-premiere",
@@ -508,21 +534,54 @@ export function advanceSeason(state: GameState): GameState {
       ];
     }
 
-    // working together is how you learn what someone is truly worth
-    s.studio = {
-      ...s.studio,
-      familiarity: {
-        ...s.studio.familiarity,
-        [film.directorId]: Math.min(
-          1,
-          (s.studio.familiarity[film.directorId] ?? 0) + TUNING.familiarityPerFilm,
-        ),
-      },
+    // working together is how you learn what someone is truly worth (§2b)
+    const familiarity = {
+      ...s.studio.familiarity,
+      [film.directorId]: Math.min(
+        1,
+        (s.studio.familiarity[film.directorId] ?? 0) + TUNING.familiarityPerFilm,
+      ),
     };
+    for (const slot of film.cast) {
+      const bump =
+        slot.role === "support"
+          ? TUNING.familiarityPerFilmActor.support
+          : TUNING.familiarityPerFilmActor.major;
+      familiarity[slot.actorId] = Math.min(1, (familiarity[slot.actorId] ?? 0) + bump);
+    }
 
-    // fame is a market: results move the people who made them
+    // a completed film forges a working bond, and reveals & drifts chemistry (§3, §7)
+    const relationships = { ...s.studio.relationships };
+    const pairChemistry = { ...s.studio.pairChemistry };
+    const cc = TUNING.chemistry;
+    for (const slot of film.cast) {
+      const market = s.market.actors.find((a) => a.id === slot.actorId);
+      const overpaid = !!market && slot.deal.salary >= market.salary * TUNING.passion.overpayAt;
+      relationships[slot.actorId] = Math.max(
+        -100,
+        Math.min(100, (relationships[slot.actorId] ?? 0) + 3 + (overpaid ? 5 : 0)),
+      );
+    }
+    for (let i = 0; i < film.cast.length; i++) {
+      for (let j = i + 1; j < film.cast.length; j++) {
+        const a = film.cast[i].actorId;
+        const b = film.cast[j].actorId;
+        const current = pairChemistryValue(s, a, b);
+        pairChemistry[pairKey(a, b)] = Math.max(
+          -cc.cap,
+          Math.min(cc.cap, current + (current >= 0 ? cc.growPositive : cc.growNegative)),
+        );
+      }
+    }
+    s.studio = { ...s.studio, familiarity, relationships, pairChemistry };
+
+    // fame is a market: results move the people who made them; young talent that
+    // works grows toward its cap — long, unhurried schedules mentor hardest (§3)
     const hit = adjusted.profit > 0;
     const lauded = adjusted.criticScore >= 75;
+    const norm = GENRE_NORMS[film.genre];
+    const g = TUNING.growth;
+    const mentor = film.shootingDays >= norm.days * g.mentorScheduleAt ? g.mentorMult : 1;
     s.market = {
       ...s.market,
       directors: s.market.directors.map((d) =>
@@ -530,6 +589,8 @@ export function advanceSeason(state: GameState): GameState {
           ? {
               ...d,
               heat: Math.round(clamp(d.heat + (hit ? 10 : -8) + (lauded ? 8 : 0), -50, 50)),
+              craft: grownStat(d.age, d.growth ?? 0, d.craft, g.directorCraft, mentor),
+              vision: grownStat(d.age, d.growth ?? 0, d.vision, g.directorVision, mentor),
               trackRecord: [
                 ...d.trackRecord.slice(-4),
                 {
@@ -544,14 +605,20 @@ export function advanceSeason(state: GameState): GameState {
             }
           : d,
       ),
-      actors: s.market.actors.map((a) =>
-        film.cast.some((c) => c.actorId === a.id && c.role !== "support")
-          ? {
-              ...a,
-              heat: Math.round(clamp(a.heat + (hit ? 8 : -6) + (lauded ? 5 : 0), -50, 50)),
-            }
-          : a,
-      ),
+      actors: s.market.actors.map((a) => {
+        const slot = film.cast.find((c) => c.actorId === a.id);
+        if (!slot) return a;
+        const heat =
+          slot.role !== "support"
+            ? Math.round(clamp(a.heat + (hit ? 8 : -6) + (lauded ? 5 : 0), -50, 50))
+            : a.heat;
+        return {
+          ...a,
+          heat,
+          craft: grownStat(a.age, a.growth ?? 0, a.craft, g.actorCraft, mentor),
+          range: grownStat(a.age, a.growth ?? 0, a.range, g.actorRange, mentor),
+        };
+      }),
     };
   }
   s = updateReputation(s);
@@ -563,9 +630,13 @@ export function advanceSeason(state: GameState): GameState {
   // ── 4. market refresh
   s = refreshMarketSeason(rng, s);
 
-  // ── 5. overhead + credit interest
+  // ── 5. overhead + credit interest — prestige costs money to keep (§5)
   const slots = productionSlots(s.studio.legacyPoints);
-  const overhead = TUNING.overheadPerSeason + (slots - 1) * TUNING.overheadPerExtraSlot;
+  const tier = prestigeTier(s.studio.legacyPoints);
+  const overhead =
+    TUNING.overheadPerSeason +
+    (slots - 1) * TUNING.overheadPerExtraSlot +
+    (tier - 1) * TUNING.overheadPerTier;
   const interest = interestDue(s);
   s = {
     ...s,
@@ -629,6 +700,18 @@ export function advanceSeason(state: GameState): GameState {
       0,
     );
 
+    // the trades reclassify a studio when it climbs a prestige tier (§10)
+    const tierBefore = prestigeTier(s.studio.legacyPoints);
+    const tierAfter = prestigeTier(s.studio.legacyPoints + pointsGained);
+    const tierUp = tierAfter > tierBefore ? tierAfter : undefined;
+    if (tierUp) {
+      legacyNews.push({
+        stamp: endingSeason,
+        kind: "studio",
+        text: `THE TRADES RECLASSIFY ${s.studio.name.toUpperCase()}: ${tierName(tierAfter)}`,
+      });
+    }
+
     s = {
       ...s,
       studio: {
@@ -643,6 +726,7 @@ export function advanceSeason(state: GameState): GameState {
       year: endedYear,
       awards,
       legacyNews,
+      tierUp,
       revenue: Math.round(revenue),
       costs: Math.round(costs),
       rivalStandings: [
@@ -674,10 +758,16 @@ export function advanceSeason(state: GameState): GameState {
       s.mode.kind === "scenario" &&
       (scenarioById(s.mode.scenarioId)?.won(s) ?? false);
     if (endedYear >= lengthYears || scenarioWon) {
+      // fast-forward every unresolved legacy to its verdict, then score the run
+      const epi = resolveEpilogue(rng, s);
       s = {
-        ...s,
-        gameOver: { reason: "campaign-complete", score: computeCampaignScore(s) },
-        screen: "game-over",
+        ...epi.state,
+        gameOver: {
+          reason: "campaign-complete",
+          score: computeCampaignScore(epi.state),
+          epilogue: epi.entries,
+        },
+        screen: "epilogue",
       };
     }
   } else {

@@ -1,12 +1,15 @@
-import { Panel, SectionTitle } from "../../components/Bits/Bits";
+import { useState } from "react";
+import { Panel } from "../../components/Bits/Bits";
 import { Button } from "../../components/Button/Button";
 import { GenreTitle } from "../../components/GenreTitle/GenreTitle";
 import { canAfford, scriptAllIn } from "../../engine/economy";
-import { GENRE_LABELS } from "../../engine/tuning";
+import { filmsTogether, yourPeople } from "../../engine/roster";
+import { GENRE_LABELS, TUNING } from "../../engine/tuning";
 import { genreColor } from "../../lib/genreColor";
 import type { GameState, Script } from "../../engine/types";
 import { IconCritic, IconCrowd, IconFlame, IconScript, IconWriter } from "../../icons";
 import { fmtMoney } from "../../lib/format";
+import { cx } from "../../lib/cx";
 import styles from "./Market.module.css";
 
 /**
@@ -26,20 +29,38 @@ export function Market({
 }) {
   // most relevant first: scripts you owe a greenlight on, then what the market
   // wants right now, then raw buzz
+  const [tab, setTab] = useState<"scripts" | "people">("scripts");
   const promisedIds = new Set(game.studio.promises.map((p) => p.scriptId));
   const rank = (s: Script) =>
     (promisedIds.has(s.id) ? 10000 : 0) +
     (s.genre === game.trends.hot || s.subGenre === game.trends.hot ? 400 : 0) +
     s.buzz;
   const scripts = [...game.market.scripts].sort((a, b) => rank(b) - rank(a));
+  const peopleCount = yourPeople(game).length;
   return (
     <div>
       <div className={styles.head}>
-        <SectionTitle>THE SCRIPT MARKET</SectionTitle>
+        <div className={styles.tabs}>
+          <button
+            className={cx(styles.tab, tab === "scripts" && styles.tabOn)}
+            onClick={() => setTab("scripts")}
+          >
+            THE SCRIPT MARKET
+          </button>
+          <button
+            className={cx(styles.tab, tab === "people" && styles.tabOn)}
+            onClick={() => setTab("people")}
+          >
+            YOUR PEOPLE {peopleCount > 0 && <em>{peopleCount}</em>}
+          </button>
+        </div>
         <Button variant="secondary" onClick={onBack}>
           ← Slate
         </Button>
       </div>
+      {tab === "people" && <YourPeople game={game} />}
+      {tab === "scripts" && (
+        <>
       {game.market.ips.length > 0 && (
         <div className={styles.ipRow}>
           {game.market.ips.map((l) => (
@@ -94,6 +115,94 @@ export function Market({
           </Panel>
         )}
       </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/** the roster you've built: rapport, films together, contracts, chemistry (§3) */
+function YourPeople({ game }: { game: GameState }) {
+  const nameOf = (id: string): { name: string; kind: string } => {
+    const d = game.market.directors.find((x) => x.id === id);
+    if (d) return { name: d.name, kind: "director" };
+    const a = game.market.actors.find((x) => x.id === id);
+    if (a) return { name: a.name, kind: "actor" };
+    const w = game.market.writers.find((x) => x.id === id);
+    if (w) return { name: w.name, kind: "writer" };
+    for (const fid of game.studio.filmIds) {
+      const f = game.films[fid];
+      if (!f) continue;
+      if (f.directorId === id) return { name: f.directorName, kind: "director" };
+      const slot = f.cast.find((c) => c.actorId === id);
+      if (slot) return { name: slot.actorName, kind: "actor" };
+    }
+    return { name: "", kind: "person" };
+  };
+
+  const rows = yourPeople(game)
+    .map((id) => {
+      const info = nameOf(id);
+      const rel = game.studio.relationships[id] ?? 0;
+      const together = filmsTogether(game, id);
+      const contract = game.studio.contracts[id];
+      const partners = Object.entries(game.studio.pairChemistry)
+        .filter(([k]) => k.split("|").includes(id))
+        .map(([k, v]) => ({ name: nameOf(k.split("|").find((x) => x !== id)!).name, value: v }))
+        .filter((p) => p.name && Math.abs(p.value) > TUNING.chemistry.deadZone);
+      return { id, ...info, rel, together, contract, partners };
+    })
+    .filter((r) => r.name)
+    .sort((a, b) => b.rel + b.together * 5 - (a.rel + a.together * 5));
+
+  if (rows.length === 0) {
+    return (
+      <Panel>
+        <p className={styles.empty}>
+          You haven't worked with anyone yet. Hire, cast, and re-team — the people
+          you build a rapport with are yours to grow.
+        </p>
+      </Panel>
+    );
+  }
+
+  return (
+    <div className={styles.peopleGrid}>
+      {rows.map((r) => (
+        <Panel key={r.id} className={styles.personCard}>
+          <div className={styles.personHead}>
+            <b className={styles.personName}>{r.name}</b>
+            <span className={styles.personKind}>{r.kind}</span>
+          </div>
+          <div className={styles.personStats}>
+            {r.rel !== 0 && (
+              <span className={styles.personRapport}>♥ {r.rel > 0 ? `+${r.rel}` : r.rel}</span>
+            )}
+            {r.together > 0 && (
+              <span>
+                {r.together} film{r.together > 1 ? "s" : ""} together
+              </span>
+            )}
+            {r.contract && (
+              <span className={styles.personContract}>
+                CONTRACT · {r.contract.filmsLeft} film{r.contract.filmsLeft > 1 ? "s" : ""} left
+              </span>
+            )}
+          </div>
+          {r.partners.length > 0 && (
+            <div className={styles.personChem}>
+              {r.partners.map((p) => (
+                <span
+                  key={p.name}
+                  className={cx(styles.chemTag, p.value > 0 ? styles.chemTagGood : styles.chemTagBad)}
+                >
+                  {p.value > 0 ? "⚡" : "💥"} {p.name.split(" ")[0]} {p.value > 0 ? `+${p.value}` : p.value}
+                </span>
+              ))}
+            </div>
+          )}
+        </Panel>
+      ))}
     </div>
   );
 }

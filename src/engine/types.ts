@@ -52,6 +52,15 @@ export interface Person {
   /** current asking price, $M */
   salary: number;
   traits: TraitId[];
+  /** hidden 0–100 potential: young talent that works improves toward its cap (§3) */
+  growth?: number;
+  /**
+   * 0–100 track-record depth. Experience is the SCOUTING-CONFIDENCE axis: a
+   * veteran's hidden stats read close to the truth with a tight band, an
+   * unknown's are a wide-open guess. Star power (appeal) is always public and
+   * never subject to this. Drives perception.ts; salary follows fame, not this.
+   */
+  experience: number;
 }
 
 export interface CrewMate {
@@ -141,6 +150,12 @@ export interface Script {
   ambition: number;
   coherence: number;
   buzz: number;
+  /**
+   * The concept's natural budget in $M (§4). Scrappy concepts want less money
+   * and cap lower on opening/appeal; under-funding below this hurts execution.
+   * It's what the script "wants" — distinct from the genre's average budget.
+   */
+  budgetTarget: number;
   writerId: string;
   writerName: string;
   rewrites: RewritePass[];
@@ -223,7 +238,11 @@ export interface CastSlot {
   appeal: number;
   craft: number;
   range: number;
+  /** experience at signing: a cheap no-name lead is a wide box-office gamble (§3) */
+  experience: number;
   fanbase: Fanbase;
+  /** 0–100 how much this actor believes in the film, snapshotted at signing (§4) */
+  passion: number;
 }
 
 export interface VisionEntry {
@@ -279,8 +298,12 @@ export interface ReleaseResult {
   boxOffice: number;
   streaming: number;
   ancillary: number;
-  /** studio net after budget+marketing+backend */
+  /** studio net after budget+marketing+backend AND the town's cut */
   profit: number;
+  /** studio net BEFORE the town's cut — verdicts & franchise minting read this */
+  grossProfit: number;
+  /** the windfall participation shaved off a huge profit (§5) */
+  windfallCut: number;
   crowdScore: number;
   criticScore: number;
   verdict: Verdict;
@@ -316,6 +339,8 @@ export interface ProductionEventRecord {
 export interface Film {
   id: string;
   title: string;
+  /** the player renamed it — REWRITE must not clobber a custom title (§11) */
+  customTitle?: boolean;
   genre: Genre;
   script: Script; // snapshot at greenlight (market copy is removed)
   directorId: string;
@@ -351,6 +376,14 @@ export interface Film {
   /** extra money already sunk beyond budget (overruns, granted extensions) */
   overruns: number;
   greenlitAt: SeasonStamp;
+  /**
+   * How principal photography went (§5). Rolled at the production→post flip —
+   * chemistry, passion, craft and schedule push it, luck decides the rest — as
+   * a hidden swing to the film's true E/A/X. A test screening REVEALS it (the
+   * forecast collapses to the truth); studio reshoots REPAIR it (pull the swing
+   * back toward the planned film). This is the reason those tools exist.
+   */
+  shoot?: { swingE: number; swingA: number; swingX: number };
   latent?: { E: number; A: number; X: number };
   result?: ReleaseResult;
   legacy?: LegacyState;
@@ -408,6 +441,10 @@ export interface Studio {
    */
   familiarity: Record<string, number>;
   franchises: FranchiseIP[];
+  /** persistent pairwise chemistry, key = sorted "idA|idB"; grows as pairs re-team (§7) */
+  pairChemistry: Record<string, number>;
+  /** pair keys the studio has paid to read (revealed even if never worked together) */
+  chemistryReads: string[];
   /** multi-film deals: locked salary + films remaining, per person */
   contracts: Record<string, { salary: number; filmsLeft: number }>;
   /** passion-project greenlights owed to auteurs who did your sequels */
@@ -463,7 +500,20 @@ export type ScreenId =
   | "release-night"
   | "vault"
   | "year-end"
+  | "epilogue"
   | "game-over";
+
+/** one film's "ten years later" verdict, resolved at campaign end (§8) */
+export interface EpilogueEntry {
+  filmId: string;
+  title: string;
+  genre: Genre;
+  finalScore: number;
+  tier: string;
+  bestEventLabel?: string;
+  worstEventLabel?: string;
+  pointsGained: number;
+}
 
 export type GameMode =
   | { kind: "campaign"; lengthYears: number }
@@ -500,6 +550,8 @@ export interface YearEndReport {
   revenue: number;
   costs: number;
   rivalStandings: { name: string; money: number; acclaim: number; isPlayer: boolean }[];
+  /** the studio was reclassified up a tier this year (§10) — the new tier */
+  tierUp?: number;
 }
 
 export interface GenreTrends {
@@ -528,7 +580,12 @@ export interface GameState {
   yearEnd: YearEndReport | null;
   /** id counter for ULID-ish ids */
   idCounter: number;
-  gameOver: null | { reason: "bankrupt" | "campaign-complete"; score?: CampaignScore };
+  gameOver: null | {
+    reason: "bankrupt" | "campaign-complete";
+    score?: CampaignScore;
+    /** the "ten years later" retrospective, resolved at campaign end (§8) */
+    epilogue?: EpilogueEntry[];
+  };
   /** onboarding hints shown */
   hintsSeen: string[];
 }

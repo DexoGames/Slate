@@ -11,6 +11,28 @@ export function prestigeTier(legacyPoints: number): number {
   return tier;
 }
 
+/** the studio's standing in the trade papers, tier 1..5 (§10) */
+export const TIER_NAMES = [
+  "POVERTY ROW",
+  "INDIE HOUSE",
+  "RESPECTABLE HOUSE",
+  "MAJOR",
+  "DREAM FACTORY",
+] as const;
+
+export const TIER_NUMERALS = ["I", "II", "III", "IV", "V"] as const;
+
+export function tierName(tier: number): string {
+  return TIER_NAMES[Math.min(TIER_NAMES.length - 1, Math.max(0, tier - 1))];
+}
+
+/** legacy points needed to reach the next tier, or null at the top */
+export function nextTierThreshold(legacyPoints: number): number | null {
+  const tier = prestigeTier(legacyPoints);
+  const t = TUNING.tierThresholds;
+  return tier >= t.length ? null : t[tier];
+}
+
 export function productionSlots(legacyPoints: number): number {
   return TUNING.slotsByTier[prestigeTier(legacyPoints) - 1];
 }
@@ -31,11 +53,11 @@ export function computeCampaignScore(state: GameState): CampaignScore {
     .filter((f): f is Film => !!f && f.stage === "released");
 
   const lifetimeProfit = films.reduce((s, f) => s + (f.result?.profit ?? 0), 0);
-  // ~$600M lifetime profit ≈ a perfect money grade over 25 years
-  const profitScore = clamp((lifetimeProfit / 600) * 100);
+  // lifetime profit par ≈ a perfect money grade over the campaign
+  const profitScore = clamp((lifetimeProfit / t.scoreProfitPar) * 100);
   const prestigeScore = clamp(state.studio.reputation.prestige);
-  // ~150 legacy points ≈ perfect legacy grade
-  const legacyScore = clamp((state.studio.legacyPoints / 150) * 100);
+  // legacy-points par ≈ a perfect legacy grade
+  const legacyScore = clamp((state.studio.legacyPoints / t.scoreLegacyPar) * 100);
   const awardsWon = films.reduce((s, f) => s + f.awards.length, 0);
   const awardsScore = clamp(awardsWon * 12);
 

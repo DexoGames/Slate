@@ -18,7 +18,9 @@ export type Policy =
   | "random"
   | "selectiveDeny"
   | "franchiseFarmer" // builds one IP and milks it
-  | "hypeAbuser"; // EVENT posture on everything, always
+  | "hypeAbuser" // EVENT posture on everything, always
+  | "microBudget" // cheap scripts, unknowns, short shoots
+  | "nurture"; // signs prospects, long shoots, re-teams pairs
 
 export interface CampaignSummary {
   policy: Policy;
@@ -51,9 +53,18 @@ function pickScript(rng: Rng, policy: Policy, scripts: Script[], cash: number): 
     }
     case "maxVision":
       return affordable.reduce((a, b) => (a.ambition > b.ambition ? a : b));
+    case "microBudget": {
+      // the cheapest thing on the shelf you can actually shoot small
+      const cheapGenres = affordable.filter((s) =>
+        ["horror", "drama", "romance", "thriller", "comedy"].includes(s.genre),
+      );
+      const pool = cheapGenres.length > 0 ? cheapGenres : affordable;
+      return pool.reduce((a, b) => (a.askingPrice < b.askingPrice ? a : b));
+    }
     case "balanced":
     case "selectiveDeny":
     case "hypeAbuser":
+    case "nurture":
       return affordable.reduce((a, b) =>
         a.hook + a.ambition > b.hook + b.ambition ? a : b,
       );
@@ -65,8 +76,8 @@ function pickScript(rng: Rng, policy: Policy, scripts: Script[], cash: number): 
 /** would this policy grant the demand? "coin" = flips at hire time */
 function grantRule(policy: Policy, weight: 1 | 2 | 3, director?: Director): boolean | "coin" {
   if (policy === "maxVision") return true;
-  if (policy === "maxSafety" || policy === "franchiseFarmer") return weight === 1;
-  if (policy === "balanced" || policy === "hypeAbuser") return weight <= 2 ? true : "coin";
+  if (policy === "maxSafety" || policy === "franchiseFarmer" || policy === "microBudget") return weight === 1;
+  if (policy === "balanced" || policy === "hypeAbuser" || policy === "nurture") return weight <= 2 ? true : "coin";
   if (policy === "selectiveDeny") {
     // the good reader of reputations: indulge the genuinely skilled, and
     // never hand chaos merchants extra variance
@@ -114,6 +125,14 @@ function pickDirector(
       );
     case "maxVision":
       return candidates.reduce((a, b) => (a.vision + a.style > b.vision + b.style ? a : b));
+    case "microBudget":
+      // cheapest hand that can shoot the genre — first-timers are the bargain
+      return candidates.reduce((a, b) => (a.salary < b.salary ? a : b));
+    case "nurture": {
+      // back young talent with room to grow, weighing genre fit
+      const score = (d: Director) => (d.genres[film.genre] ?? 40) + d.craft - Math.max(0, d.age - 30) * 1.5;
+      return candidates.reduce((a, b) => (score(a) > score(b) ? a : b));
+    }
     case "balanced":
     case "selectiveDeny":
     case "hypeAbuser": {
@@ -148,6 +167,21 @@ function pickCast(rng: Rng, policy: Policy, game: GameState, film: Film) {
       break;
     case "maxVision":
       ordered = by((a) => a.craft);
+      break;
+    case "microBudget":
+      // the cheapest bodies with a pulse of talent — unknowns, ingenues
+      ordered = by((a) => a.craft * 0.4 - a.salary);
+      break;
+    case "nurture":
+      // bonds you already have + young prospects to build them, but the film
+      // still needs a draw — appeal keeps the lights on while talent matures
+      ordered = by(
+        (a) =>
+          Math.max(0, game.studio.relationships[a.id] ?? 0) +
+          (game.studio.familiarity[a.id] ?? 0) * 15 +
+          (a.age < 30 ? 12 : 0) +
+          (a.appeal + a.craft) * 0.35,
+      );
       break;
     case "balanced":
     case "selectiveDeny":
@@ -185,12 +219,12 @@ function chooseWindow(game: GameState, policy: Policy): { season: SeasonStamp; s
   return { season: summer, strategy: "wide" };
 }
 
-export function playCampaign(
+export function runCampaign(
   seed: number,
   policy: Policy,
   years: number = TUNING.campaignYears,
   trace?: string[],
-): CampaignSummary {
+): GameState {
   const rng = makeRng((seed ^ 0xbadc0de) >>> 0);
   let game = newGame(seed, { kind: "campaign", lengthYears: years });
   const prevReducer = gameReducer;
@@ -245,7 +279,7 @@ export function playCampaign(
       let dr =
         policy === "maxSafety"
           ? { testScreeningHeld: true, notesImplemented: "major" as const, studioReshoots: true, focusMarketing: true, completionBond: postFilm.deRisking.completionBond }
-          : policy === "maxVision"
+          : policy === "maxVision" || policy === "microBudget"
             ? { ...postFilm.deRisking, testScreeningHeld: false, notesImplemented: "none" as const }
             : { ...postFilm.deRisking, testScreeningHeld: true, notesImplemented: (chance(rng, 0.5) ? "minor" : "none") as "minor" | "none" };
       let toolCost =
@@ -311,7 +345,9 @@ export function playCampaign(
       if (devFilm.cast.length === 0) {
         const cast = pickCast(rng, policy, game, devFilm);
         if (cast.length > 0) {
-          game = step(game, { type: "SET_CAST", filmId: devFilm.id, cast });
+          // nurture locks its prospects to multi-film deals while they're cheap
+          const contractActorIds = policy === "nurture" ? cast.map((c) => c.actorId) : undefined;
+          game = step(game, { type: "SET_CAST", filmId: devFilm.id, cast, contractActorIds });
           continue;
         }
         game = step(game, { type: "ADVANCE_SEASON" });
@@ -320,11 +356,15 @@ export function playCampaign(
       // greenlight — reserve roughly half the remaining cash for marketing later
       const norm = GENRE_NORMS[devFilm.genre];
       const floor = devFilm.demands.find((d) => d.granted && d.demand.kind === "budget-floor")?.demand.budgetFloor ?? 0;
-      const target = Math.round(norm.budget * (policy === "maxVision" ? 1.1 : 0.9));
+      const budgetFactor =
+        policy === "maxVision" ? 1.1 : policy === "microBudget" ? 0.4 : 0.9;
+      const target = Math.round(norm.budget * budgetFactor);
       const budget = Math.max(floor, Math.min(target, Math.floor(game.studio.cash * 0.55)));
+      const daysFactor =
+        policy === "microBudget" ? 0.7 : policy === "nurture" ? 1.15 : policy === "maxSafety" ? 0.9 : 1.05;
       const days = Math.max(
         devFilm.demands.find((d) => d.granted && d.demand.kind === "shooting-days")?.demand.days ?? 0,
-        Math.round(norm.days * (policy === "maxSafety" ? 0.9 : 1.05)),
+        Math.round(norm.days * daysFactor),
       );
       const incoming = game.studio.filmIds.some((id) => {
         const f = game.films[id];
@@ -380,6 +420,16 @@ export function playCampaign(
     game = step(game, { type: "ADVANCE_SEASON" });
   }
 
+  return game;
+}
+
+export function playCampaign(
+  seed: number,
+  policy: Policy,
+  years: number = TUNING.campaignYears,
+  trace?: string[],
+): CampaignSummary {
+  const game = runCampaign(seed, policy, years, trace);
   const films = game.studio.filmIds
     .map((id) => game.films[id])
     .filter((f): f is Film => !!f && f.stage === "released");

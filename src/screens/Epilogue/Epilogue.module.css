@@ -1,0 +1,205 @@
+.wrap {
+    min-height: calc(100vh - var(--hud-h) - 34px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    text-align: center;
+    padding: 32px 24px;
+    cursor: pointer;
+}
+
+.in {
+    animation: rise 0.5s ease both;
+}
+
+@keyframes rise {
+    from {
+        opacity: 0;
+        transform: translateY(14px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.kicker {
+    font-size: 0.66rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+}
+
+.title {
+    font-family: var(--font-display);
+    font-size: clamp(2.2rem, 8vw, 4.4rem);
+    line-height: 1;
+    text-transform: uppercase;
+    color: var(--bone);
+}
+
+.sub {
+    font-size: 0.8rem;
+    font-style: italic;
+    color: var(--bone-dim);
+    max-width: 560px;
+}
+
+.shelf {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 16px;
+    width: min(1000px, 96%);
+}
+
+.poster {
+    position: relative;
+    width: 220px;
+    min-height: 150px;
+    padding: 18px 14px 14px;
+    background: var(--black-soft);
+    border: 2px solid var(--line-strong);
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    align-items: center;
+    justify-content: flex-start;
+    text-align: center;
+    animation: rise 0.5s ease both;
+}
+
+.biggest {
+    border-color: var(--stat-money);
+}
+
+.posterTitle {
+    font-size: 1.1rem;
+    line-height: 1.18;
+    text-transform: uppercase;
+    color: var(--bone);
+    max-width: 100%;
+    overflow-wrap: anywhere;
+}
+
+.stamp {
+    font-family: var(--font-display);
+    font-size: 0.9rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 3px solid var(--gold);
+    padding: 3px 12px;
+    rotate: -4deg;
+    animation: stamp 0.35s cubic-bezier(0.2, 2.4, 0.4, 1) both;
+    transform-origin: center;
+}
+
+.moneyStamp {
+    color: var(--stat-money);
+    border-color: var(--stat-money);
+}
+
+@keyframes stamp {
+    from {
+        opacity: 0;
+        scale: 2.2;
+    }
+
+    to {
+        opacity: 1;
+        scale: 1;
+    }
+}
+
+.posterMeta {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    align-items: center;
+}
+
+.finalScore {
+    font-family: var(--font-mono);
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--stat-legacy);
+}
+
+.pts {
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--stat-legacy);
+}
+
+.grosser {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--font-mono);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--stat-money);
+}
+
+.note {
+    font-size: 0.64rem;
+    font-style: italic;
+    line-height: 1.4;
+    color: var(--bone-dim);
+}
+
+.noteBad {
+    color: var(--danger);
+}
+
+.total {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+}
+
+.totalHead {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--stat-legacy);
+}
+
+.totalValue {
+    font-family: var(--font-display);
+    font-size: clamp(2.4rem, 7vw, 3.6rem);
+    color: var(--stat-legacy);
+    line-height: 1;
+}
+
+.done {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .in,
+    .poster,
+    .stamp {
+        animation: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .poster {
+        width: 100%;
+        max-width: 320px;
+    }
+}

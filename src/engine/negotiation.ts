@@ -1,3 +1,4 @@
+import { careerPhase } from "./generate/people";
 import { GENRE_NORMS, TUNING } from "./tuning";
 import type {
   Actor,
@@ -11,7 +12,7 @@ import type {
   Genre,
   Script,
 } from "./types";
-import { chance, int, makeId, makeRng, pick, range, type Rng } from "./rng";
+import { chance, clamp, int, makeId, makeRng, pick, range, type Rng } from "./rng";
 
 /**
  * Genre-flavoured creative demands. Each has its own risk signature: some buy
@@ -130,6 +131,7 @@ export function makeCastSlot(
   film: Film,
   role: CastRole,
   backendPct: number,
+  opts: { state?: GameState; pitched?: boolean; overpay?: boolean } = {},
 ): CastSlot {
   const againstType =
     !actor.typecast.includes(film.genre) && !actor.traits.includes("chameleon");
@@ -139,10 +141,15 @@ export function makeCastSlot(
   if (actor.traits.includes("method") && (film.genre === "drama" || film.genre === "war")) {
     craft = Math.min(100, craft + 6);
   }
+  // a "sweetener": pay above the ask to buy passion (§4)
+  const sweetener = opts.overpay ? TUNING.passion.overpayAt : 1;
   const deal = {
-    salary: Math.round(actor.salary * (1 - backendPct / 100) * 10) / 10,
+    salary: Math.round(actor.salary * sweetener * (1 - backendPct / 100) * 10) / 10,
     backendPoints: Math.round((backendPct / 100) * (actor.salary / 2) * 10) / 10,
   };
+  const passion = opts.state
+    ? passionFor(opts.state, actor, film, deal.salary, opts.pitched ?? false)
+    : TUNING.passion.base;
   return {
     role,
     actorId: actor.id,
@@ -152,24 +159,79 @@ export function makeCastSlot(
     appeal,
     craft,
     range: actor.range,
+    experience: actor.experience,
     fanbase: actor.fanbase,
+    passion,
   };
 }
 
 /**
- * Deterministic pairwise chemistry among the billed cast (leads count fully,
- * supports half). Nobody knows it until they're on a set together.
+ * How much an actor believes in a film, snapshotted at signing (§4). Passion
+ * raises only the ceiling — what's possible, never what's guaranteed — so it
+ * never substitutes for de-risking and can't break the money-vs-taste tension.
  */
-export function castChemistry(seed: number, cast: CastSlot[]): number {
+export function passionFor(
+  state: GameState,
+  actor: Actor,
+  film: Film,
+  dealSalary: number,
+  pitched: boolean,
+): number {
+  const p = TUNING.passion;
+  let v = p.base;
+  // a released film with this actor under this director = a bond that carries
+  const worked = Object.values(state.films).some(
+    (f) =>
+      f.stage === "released" &&
+      f.directorId &&
+      f.directorId === film.directorId &&
+      f.cast.some((c) => c.actorId === actor.id),
+  );
+  if (worked) v += p.workedWithDirector;
+  v += Math.max(0, state.studio.relationships[actor.id] ?? 0) * p.relationshipWeight;
+  if (dealSalary >= actor.salary * p.overpayAt) v += p.overpayBonus;
+  const phase = careerPhase(actor);
+  if (phase === "ingenue" || phase === "comeback") v += p.proveBonus; // something to prove
+  if (pitched) v += pitchOutcome(state.seed, film.id, actor.id) ? p.pitchWin : -p.pitchLose;
+  return Math.round(clamp(v, 0, 100));
+}
+
+/** deterministic pitch result — no persistence needed pre-lock */
+export function pitchOutcome(seed: number, filmId: string, actorId: string): boolean {
+  return (hashStr(`${seed}:pitch:${filmId}:${actorId}`) % 1000) / 1000 < TUNING.passion.pitchChance;
+}
+
+// ---------------------------------------------------------------------------
+// Chemistry v2 (§7): persistent, visible, dead-zoned.
+
+export function pairKey(a: string, b: string): string {
+  return [a, b].sort().join("|");
+}
+
+/** stored value if the pair has ever worked together / been read, else the hash */
+export function pairChemistryValue(state: GameState, aId: string, bId: string): number {
+  const stored = state.studio.pairChemistry[pairKey(aId, bId)];
+  if (stored !== undefined) return stored;
+  const h = hashStr(`${state.seed}:${pairKey(aId, bId)}`);
+  return Math.round(((h % 1000) / 1000) * (TUNING.chemistryRange * 2) - TUNING.chemistryRange);
+}
+
+export function isPairKnown(state: GameState, aId: string, bId: string): boolean {
+  const key = pairKey(aId, bId);
+  return key in state.studio.pairChemistry || state.studio.chemistryReads.includes(key);
+}
+
+/**
+ * Role-weighted pairwise chemistry among the billed cast (leads count fully,
+ * supports half). Average chemistry falls in a dead zone and contributes nothing.
+ */
+export function castChemistry(state: GameState, cast: CastSlot[]): number {
   let total = 0;
   for (let i = 0; i < cast.length; i++) {
     for (let j = i + 1; j < cast.length; j++) {
-      const a = cast[i];
-      const b = cast[j];
-      const key = [a.actorId, b.actorId].sort().join("|");
-      const h = hashStr(`${seed}:${key}`);
-      const val = ((h % 1000) / 1000) * 16 - 8; // -8..+8
-      const weight = a.role !== "support" && b.role !== "support" ? 1 : 0.5;
+      let val = pairChemistryValue(state, cast[i].actorId, cast[j].actorId);
+      if (Math.abs(val) <= TUNING.chemistry.deadZone) val = 0;
+      const weight = cast[i].role !== "support" && cast[j].role !== "support" ? 1 : 0.5;
       total += val * weight;
     }
   }

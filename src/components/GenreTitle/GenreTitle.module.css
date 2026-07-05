@@ -5,7 +5,10 @@
     font-family: var(--font-display);
     display: inline-block;
     transform-origin: left center;
-    line-height: 1.04;
+    /* the display faces have tall ascenders/swashes; give glyphs vertical room
+       so they never clip against small text sitting directly above/below (§13) */
+    line-height: 1.18;
+    padding-block: 0.06em;
     max-width: 100%;
 }
 
@@ -30,11 +33,11 @@
     letter-spacing: 0.02em;
 }
 
-/* Rough, vintage, uneasy. */
+/* Rough, vintage, uneasy — tall swashes need extra room. */
 .horror {
     font-family: var(--font-genre-horror);
     letter-spacing: 0.01em;
-    line-height: 1.18;
+    line-height: 1.22;
 }
 
 /* Massive heavy slab — impact. */
@@ -50,11 +53,11 @@
     letter-spacing: 0.05em;
 }
 
-/* Graceful display serif. */
+/* Graceful display serif — tall swashes need extra room. */
 .romance {
     font-family: var(--font-genre-romance);
     letter-spacing: 0.01em;
-    line-height: 1.14;
+    line-height: 1.22;
 }
 
 /* Distressed noir typewriter. */
@@ -76,9 +79,9 @@
     letter-spacing: 0.05em;
 }
 
-/* Bold upright marquee blocks. */
+/* Bold upright marquee blocks — the tallest swashes of all. */
 .musical {
     font-family: var(--font-genre-musical);
     letter-spacing: 0.01em;
-    line-height: 1.22;
+    line-height: 1.24;
 }

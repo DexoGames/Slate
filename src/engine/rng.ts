@@ -52,9 +52,20 @@ export function normal(rng: Rng, mu = 0, sigma = 1): number {
   return mu + sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
 }
 
-/** multiplicative lognormal factor with median 1 */
+/** multiplicative lognormal factor with median 1 (mean e^{σ²/2} > 1) */
 export function lognormalFactor(rng: Rng, sigma: number): number {
   return Math.exp(normal(rng, 0, sigma));
+}
+
+/**
+ * Multiplicative lognormal factor with MEAN exactly 1 (median e^{−σ²/2} < 1).
+ * The plain lognormal above skews the average upward, so a film's realised
+ * money systematically beats its forecast centre — "the average isn't the
+ * average." Subtracting σ²/2 pins the mean to 1 so the forecast is honest and
+ * the upside is a genuine tail, not a free bias.
+ */
+export function lognormalMeanOne(rng: Rng, sigma: number): number {
+  return Math.exp(normal(rng, 0, sigma) - (sigma * sigma) / 2);
 }
 
 /** two normals with correlation rho — for appeal/craft style anti-correlated draws */

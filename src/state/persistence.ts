@@ -1,5 +1,6 @@
 import { SAVE_VERSION } from "../engine/newGame";
-import type { GameState } from "../engine/types";
+import { GENRE_NORMS } from "../engine/tuning";
+import type { GameState, Genre } from "../engine/types";
 import { load, remove, save } from "../lib/storage";
 
 const KEY = "save";
@@ -75,6 +76,68 @@ const migrations: Record<number, (old: unknown) => unknown> = {
     const s = old as { studio: { promises?: unknown[] } };
     s.studio.promises = s.studio.promises ?? [];
     return s;
+  },
+  // v6 → v7: chemistry v2, hidden growth, cast passion, windfall-cut fields
+  6: (old) => {
+    const s = old as {
+      studio: { pairChemistry?: Record<string, number>; chemistryReads?: string[] };
+      market: {
+        actors: { age: number; growth?: number }[];
+        directors: { age: number; growth?: number }[];
+        writers: { growth?: number }[];
+      };
+      films: Record<
+        string,
+        {
+          customTitle?: boolean;
+          cast: { passion?: number }[];
+          result?: { profit: number; grossProfit?: number; windfallCut?: number };
+        }
+      >;
+    };
+    s.studio.pairChemistry ??= {};
+    s.studio.chemistryReads ??= [];
+    for (const a of s.market.actors) a.growth ??= Math.max(10, 70 - Math.max(0, a.age - 30) * 2);
+    for (const d of s.market.directors) d.growth ??= Math.max(10, 60 - Math.max(0, d.age - 30) * 2);
+    for (const w of s.market.writers) w.growth ??= 30;
+    for (const f of Object.values(s.films)) {
+      f.customTitle ??= false;
+      for (const c of f.cast) c.passion ??= 20;
+      if (f.result) {
+        f.result.grossProfit ??= f.result.profit;
+        f.result.windfallCut ??= 0;
+      }
+    }
+    return s; // mode.lengthYears untouched — in-flight 25y campaigns finish at 25
+  },
+  // v7 → v8: experience axis, per-script budget targets, principal-photography swing
+  7: (old) => {
+    const s = old as {
+      market: {
+        directors: { age: number; experience?: number }[];
+        writers: { age: number; experience?: number }[];
+        actors: { age: number; experience?: number }[];
+        scripts: { genre: string; budgetTarget?: number }[];
+      };
+      films: Record<
+        string,
+        {
+          script: { genre: string; budgetTarget?: number };
+          cast: { experience?: number }[];
+        }
+      >;
+    };
+    const expFromAge = (age: number) => Math.max(2, Math.min(100, Math.round((age - 24) * 2.3)));
+    const targetFor = (genre: string) => GENRE_NORMS[genre as Genre]?.budget ?? 30;
+    for (const d of s.market.directors) d.experience ??= expFromAge(d.age);
+    for (const w of s.market.writers) w.experience ??= expFromAge(w.age);
+    for (const a of s.market.actors) a.experience ??= expFromAge(a.age);
+    for (const sc of s.market.scripts) sc.budgetTarget ??= targetFor(sc.genre);
+    for (const f of Object.values(s.films)) {
+      f.script.budgetTarget ??= targetFor(f.script.genre);
+      for (const c of f.cast) c.experience ??= 50; // a signed actor is a known quantity
+    }
+    return s; // `shoot` stays undefined — pre-v8 films skip the swing entirely
   },
 };
 

@@ -1,6 +1,6 @@
 import { PRESTIGE_WORDS } from "../data/names";
 import { generateLogline, generateTitle } from "./generate/scripts";
-import { TUNING } from "./tuning";
+import { GENRE_NORMS, TUNING } from "./tuning";
 import type { Director, Film, FranchiseIP, GameState, Genre, IPListing, Script, Writer } from "./types";
 import { chance, clamp, int, makeId, pick, range, type Rng } from "./rng";
 
@@ -20,7 +20,8 @@ export function qualifiesAsFranchise(film: Film): boolean {
   const t = TUNING.franchise;
   const r = film.result;
   if (!r) return false;
-  return r.profit >= film.budget * t.mintProfitOverBudget && r.crowdScore >= t.mintCrowdMin;
+  // read the pre-cut gross: a smash is a smash before the town takes its cut (§5)
+  return r.grossProfit >= film.budget * t.mintProfitOverBudget && r.crowdScore >= t.mintCrowdMin;
 }
 
 export function mintFranchise(rng: Rng, ids: { counter: number }, film: Film): FranchiseIP {
@@ -71,6 +72,8 @@ export function developSequelScript(
     ambition,
     coherence: clamp(Math.round(40 + writer.craft * 0.5 + range(rng, -8, 8))),
     buzz: clamp(Math.round(ip.awareness * 0.8)),
+    // a franchise instalment wants a full canvas — awareness is spectacle money
+    budgetTarget: Math.round(GENRE_NORMS[ip.genre].budget * (0.85 + ip.awareness / 400) * 10) / 10,
     writerId: writer.id,
     writerName: writer.name,
     rewrites: [],
@@ -96,6 +99,8 @@ export function developPassionScript(rng: Rng, ids: { counter: number }, directo
     ambition: clamp(Math.round(55 + director.vision * 0.4 + range(rng, -5, 5))),
     coherence: clamp(Math.round(50 + director.craft * 0.3 + range(rng, -6, 6))),
     buzz: clamp(int(rng, 5, 25)),
+    // the weird little thing nobody would fund — a small canvas by definition
+    budgetTarget: Math.round(GENRE_NORMS[genre].budget * 0.5 * 10) / 10,
     writerId: director.id,
     writerName: director.name,
     rewrites: [],

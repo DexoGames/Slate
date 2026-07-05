@@ -7,6 +7,22 @@ import type { Genre } from "../engine/types";
  */
 
 export const FIRST_NAMES = [
+  // ordinary, everyday given names — a broad, varied spread across cultures
+  "James", "Sarah", "David", "Emma", "Michael", "Olivia", "Daniel", "Sophia",
+  "Robert", "Grace", "Thomas", "Hannah", "William", "Chloe", "Andrew", "Lucy",
+  "Samuel", "Ava", "Benjamin", "Ella", "Henry", "Mia", "Jack", "Isla",
+  "George", "Amelia", "Charlie", "Leah", "Adam", "Rachel", "Peter", "Anna",
+  "Paul", "Laura", "Mark", "Claire", "Stephen", "Rebecca", "Alan", "Nicole",
+  "Kevin", "Megan", "Brian", "Katie", "Nathan", "Zoe", "Aaron", "Molly",
+  "Carlos", "Sofía", "Diego", "Lucía", "Mateo", "Valentina", "Javier", "Elena",
+  "Hassan", "Aisha", "Omar", "Fatima", "Yusuf", "Layla", "Karim", "Zara",
+  "Wei", "Mei", "Jian", "Ling", "Haruki", "Yuki", "Kenji", "Sakura",
+  "Kwame", "Amara", "Kofi", "Nia", "Tunde", "Chidi", "Femi", "Ifeoma",
+  "Dmitri", "Natasha", "Sergei", "Katya", "Lars", "Freya", "Sven", "Astrid",
+  "Raj", "Anjali", "Arjun", "Divya", "Vikram", "Meera", "Sanjay", "Neha",
+  "Antonio", "Giulia", "Luca", "Francesca", "Marco", "Chiara", "Paolo", "Alessia",
+  "Sean", "Niamh", "Liam", "Saoirse", "Declan", "Aoife", "Rory", "Sinead",
+  // classic mid-century marquee names
   "Miles", "Josephine", "Desmond", "Priya", "Julian", "Naomi", "Theo", "Camille",
   "Elliot", "Simone", "August", "Nadia", "Weston", "Imogen", "Reuben", "Talia",
   "Graham", "Selene", "Marcus", "Piper", "Vivienne", "Callum", "Odette", "Grier",
@@ -20,6 +36,25 @@ export const FIRST_NAMES = [
 ] as const;
 
 export const LAST_NAMES = [
+  // ordinary, common surnames — a broad, varied spread
+  "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis",
+  "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson",
+  "Taylor", "Thomas", "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson",
+  "White", "Harris", "Clark", "Lewis", "Walker", "Hall", "Allen", "Young",
+  "King", "Wright", "Scott", "Green", "Baker", "Adams", "Nelson", "Carter",
+  "Mitchell", "Roberts", "Turner", "Phillips", "Campbell", "Parker", "Evans",
+  "Edwards", "Collins", "Murphy", "Cook", "Rogers", "Morgan", "Bell", "Bailey",
+  "Cooper", "Richardson", "Cox", "Howard", "Ward", "Price", "Bennett", "Wood",
+  "Patel", "Singh", "Kumar", "Sharma", "Khan", "Ahmed", "Ali", "Hussain",
+  "Wang", "Li", "Zhang", "Chen", "Liu", "Yang", "Huang", "Zhao",
+  "Kim", "Park", "Choi", "Jung", "Nguyen", "Tran", "Pham", "Vo",
+  "Sato", "Suzuki", "Takahashi", "Tanaka", "Watanabe", "Ito", "Yamamoto",
+  "Rossi", "Ferrari", "Russo", "Romano", "Colombo", "Ricci", "Greco",
+  "Müller", "Schmidt", "Schneider", "Fischer", "Weber", "Wagner", "Becker",
+  "Andersson", "Nilsson", "Eriksson", "Karlsson", "Olsson", "Persson",
+  "Ivanov", "Popov", "Volkov", "Sokolov", "Novak", "Horvat", "Kovac",
+  "Adeyemi", "Balogun", "Nwosu", "Mensah", "Owusu", "Diallo", "Traoré",
+  // period-flavoured marquee surnames
   "Whitfield", "Callahan", "Delacroix", "Okonkwo", "Reyes", "Sinclair", "Bishop",
   "Hale", "Kwan", "Alvarado", "Sterling", "Voss", "Marchetti", "Doyle",
   "Abernathy", "Castellano", "Whitlock", "Faraday", "Osei", "Beaumont",

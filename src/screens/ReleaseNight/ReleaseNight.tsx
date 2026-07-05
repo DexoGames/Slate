@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "../../components/Button/Button";
 import { GenreTitle } from "../../components/GenreTitle/GenreTitle";
 import { VERDICT_LABELS } from "../../engine/release";
-import type { Film } from "../../engine/types";
+import type { Film, Verdict } from "../../engine/types";
 import { IconCritic, IconCrowd, IconLegacy } from "../../icons";
 import { fmtMoney } from "../../lib/format";
 import { cx } from "../../lib/cx";
@@ -32,6 +32,37 @@ function legacyLine(band: [number, number], eligible: boolean): string {
   return "Instantly forgotten, pending appeal.";
 }
 
+/** the room's reaction, keyed to the verdict */
+function audienceLine(verdict: Verdict): string {
+  switch (verdict) {
+    case "smash":
+      return "The lobby is a mob. Someone starts a chant.";
+    case "hit":
+      return "A good crowd, a good night. Nobody asks for a refund.";
+    case "sleeper":
+      return "Half-empty house, but they left buzzing. Word will spread.";
+    case "wash":
+      return "Polite applause, then the long walk to the car park.";
+    case "flop":
+      return "Rows emptied out somewhere in the second act.";
+    case "bomb":
+      return "The projectionist has seen happier funerals.";
+    case "succes-de-scandale":
+      return "They're furious. They're also still talking about it.";
+  }
+}
+
+/** pure-CSS confetti for a SMASH */
+function Confetti() {
+  return (
+    <div className={styles.confetti} aria-hidden>
+      {Array.from({ length: 20 }, (_, i) => (
+        <i key={i} className={styles.confettiPiece} style={{ left: `${(i * 5 + 2) % 100}%`, animationDelay: `${(i % 5) * 0.12}s` }} />
+      ))}
+    </div>
+  );
+}
+
 export function ReleaseNight({ film, onDone }: { film: Film; onDone: () => void }) {
   const [stage, setStage] = useState(0);
   const result = film.result;
@@ -48,6 +79,8 @@ export function ReleaseNight({ film, onDone }: { film: Film; onDone: () => void 
 
   return (
     <div className={styles.wrap} onClick={() => setStage(5)}>
+      <div className={styles.lightsDown} aria-hidden />
+      {stage >= 3 && result.verdict === "smash" && <Confetti />}
       <p className={cx(styles.kicker, styles.in)}>
         {isStreaming ? "NOW STREAMING" : "OPENING NIGHT"}
       </p>
@@ -89,13 +122,18 @@ export function ReleaseNight({ film, onDone }: { film: Film; onDone: () => void 
       )}
 
       {stage >= 3 && (
-        <div className={cx(styles.verdict, styles.stamp)}>
-          {VERDICT_LABELS[result.verdict]}
-          <span className={styles.profit}>
-            {result.profit >= 0 ? "+" : ""}
-            {fmtMoney(result.profit)} net
-          </span>
-        </div>
+        <>
+          <div
+            className={cx(styles.verdict, styles.stamp, result.verdict === "bomb" && styles.shake)}
+          >
+            {VERDICT_LABELS[result.verdict]}
+            <span className={styles.profit}>
+              {result.profit >= 0 ? "+" : ""}
+              {fmtMoney(result.profit)} net
+            </span>
+          </div>
+          <p className={cx(styles.audience, styles.in)}>{audienceLine(result.verdict)}</p>
+        </>
       )}
 
       {stage >= 4 && (

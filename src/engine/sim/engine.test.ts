@@ -17,6 +17,7 @@ const script = (): Script => ({
   ambition: 60,
   coherence: 60,
   buzz: 40,
+  budgetTarget: 20,
   writerId: "w1",
   writerName: "W",
   rewrites: [],

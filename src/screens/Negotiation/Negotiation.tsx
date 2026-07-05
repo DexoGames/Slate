@@ -187,6 +187,12 @@ function DirectorList({
                   color="var(--stat-legacy)"
                   hint="Vision, as the town estimates it. The faded band is how unsure they are."
                 />
+                <StatBar
+                  label="Experience"
+                  value={d.experience}
+                  color="var(--bone-dim)"
+                  hint="Experience — a green director's craft & vision are a wide guess (see the bands); a veteran's read is tight."
+                />
               </div>
               <div className={styles.tagRow}>
                 <StyleLean style={d.style} />

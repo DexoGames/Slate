@@ -6,6 +6,7 @@ import { fmtSeason } from "./lib/format";
 import type { GameMode } from "./engine/types";
 import { Casting } from "./screens/Casting/Casting";
 import { Dashboard } from "./screens/Dashboard/Dashboard";
+import { Epilogue } from "./screens/Epilogue/Epilogue";
 import { FilmDetail } from "./screens/FilmDetail/FilmDetail";
 import { GameOver } from "./screens/GameOver/GameOver";
 import { Market } from "./screens/Market/Market";
@@ -76,6 +77,12 @@ export function App() {
 
   const body = (() => {
     if (game.gameOver) {
+      // the ten-years-later reel plays before the final score
+      if (game.screen === "epilogue" && game.gameOver.epilogue) {
+        return (
+          <Epilogue game={game} onDone={() => dispatch({ type: "GO_TO", screen: "game-over" })} />
+        );
+      }
       return (
         <GameOver
           game={game}
@@ -142,6 +149,8 @@ export function App() {
             dispatch({ type: "SET_CAST", filmId: film.id, cast, contractActorIds });
             setView({ kind: "film", id: film.id });
           }}
+          onScreenTest={(actorId) => dispatch({ type: "SCREEN_TEST", actorId })}
+          onChemistryRead={(aId, bId) => dispatch({ type: "CHEMISTRY_READ", aId, bId })}
           onBack={() => setView({ kind: "film", id: film.id })}
         />
       );
@@ -155,6 +164,7 @@ export function App() {
           onNegotiate={() => setView({ kind: "negotiation", filmId: film.id })}
           onCasting={() => setView({ kind: "casting", filmId: film.id })}
           onRewrite={(byFixer) => dispatch({ type: "REWRITE", filmId: film.id, byFixer })}
+          onRename={(title) => dispatch({ type: "RENAME_FILM", filmId: film.id, title })}
           onAbandon={() => {
             dispatch({ type: "ABANDON_FILM", filmId: film.id });
             setView({ kind: "dashboard" });

@@ -7,7 +7,9 @@ import {
   competitionCount,
   computeSpread,
   genreShape,
+  streamingReach,
   trendMult,
+  windfallNet,
 } from "./release";
 import { computeLatent } from "./quality";
 import { computeHype } from "./publicity";
@@ -63,9 +65,16 @@ export function estimateOutcomes(
   brandFx: { opening: number; critic: number } = { opening: 1, critic: 0 },
 ): OutcomeEstimate {
   const t = TUNING;
-  const latent = film.latent ?? computeLatent(film, director);
+  // the shoot's swing is hidden until a test screening reveals it (§5); until
+  // then the forecast shows the PLANNED film and a wider band for the unknown
+  const revealed = film.deRisking.testScreeningHeld;
+  const latent = film.latent ?? computeLatent(film, director, { applyShoot: revealed });
   const { E, A, X } = latent;
   const spread = computeSpread(film, director, franchise);
+  // an unrevealed shoot (post, untested) widens the forecast — the reason to test
+  const shootUnknown = !!film.shoot && !revealed && !film.latent;
+  const sigmaAcclaim = spread.sigmaAcclaim + (shootUnknown ? t.shoot.forecastSigma : 0);
+  const sigmaMoney = spread.sigmaMoney + (shootUnknown ? t.shoot.forecastSigma : 0);
   const profile = castMoneyProfile(film);
   const shape = genreShape(film);
   const strategy = film.release?.strategy ?? "wide";
@@ -100,14 +109,14 @@ export function estimateOutcomes(
     0,
     spread.ceiling,
   );
-  const crowd = normalFive(crowdBase, spread.sigmaAcclaim * t.crowdRoll.sigmaScale, spread.ceiling);
-  const critic = normalFive(criticBase, spread.sigmaAcclaim, spread.ceiling);
+  const crowd = normalFive(crowdBase, sigmaAcclaim * t.crowdRoll.sigmaScale, spread.ceiling);
+  const critic = normalFive(criticBase, sigmaAcclaim, spread.ceiling);
 
   // ----- money: lognormal five-number summary of net profit
   let money: AxisEstimate;
   const costs = film.budget + film.marketing + film.overruns + film.talentCost;
   if (strategy === "streaming") {
-    const profit = Math.round(film.budget * t.streamingSaleMult - costs);
+    const profit = Math.round(windfallNet(film.budget * t.streamingSaleMult - costs).net);
     money = { min: profit, q1: profit, median: profit, q3: profit, max: profit, sigma: 0 };
   } else {
     const norm = GENRE_NORMS[film.genre];
@@ -123,15 +132,17 @@ export function estimateOutcomes(
       ? (1 + (franchise.awareness / 100) * t.franchise.openingBoost) *
         (1 - franchise.fatigue / t.franchise.fatigueOpeningDiv)
       : 1;
-    let opening =
-      norm.opening * (film.budget / norm.budget) ** t.budgetExponent *
+    const canvasMult =
+      t.scriptBudget.canvasBase +
+      t.scriptBudget.canvasScale * clamp(film.script.budgetTarget / norm.budget, 0, 2);
+    const baseOpening =
+      norm.opening * (film.budget / norm.budget) ** t.budgetExponent * canvasMult *
       appealMult * marketingMult * t.seasonMult[season] * competitionMult *
       trendMult(film, trends) *
       franchiseOpen *
       (t.hype.openingBase + hype / t.hype.openingDiv) *
       brandFx.opening *
       (film.deRisking.focusMarketing ? 1.05 : 1);
-    if (strategy === "platform") opening = Math.min(opening, norm.opening * t.platformOpeningCap);
     const hypeBar = t.hype.expectationBase + hype / t.hype.expectationDiv;
     const hypeLegsMult =
       crowdBase < hypeBar - t.hype.missTol
@@ -144,19 +155,35 @@ export function estimateOutcomes(
       shape.legsProfile *
       profile.legsMult *
       hypeLegsMult;
-    const box = opening * (1 + legsFactor * (strategy === "platform" ? 1.25 : 1));
     const subStream = film.script.subGenre ? GENRE_NORMS[film.script.subGenre].stream : null;
     const streamNorm =
       (subStream !== null ? (norm.stream + subStream) / 2 : norm.stream) * profile.streamMult;
-    const streaming = (t.streamingBase + t.streamingAppeal * castAppeal + t.streamingCrowd * crowdBase) * streamNorm;
-    const ancillary = box * (t.ancillaryRate[film.genre] ?? 0);
-    const gross = box * t.theatricalShare + streaming + ancillary;
     const backendPoints = film.cast.reduce((s, c) => s + c.deal.backendPoints, 0) +
       film.demands.filter((d) => d.granted && d.demand.kind === "backend-points")
         .reduce((s, d) => s + (d.demand.points ?? 0), 0);
-    const net = gross * (1 - backendPoints / 100);
-    const sigmaFactor = spread.sigmaMoney / t.moneySigmaDiv;
-    const at = (z: number) => Math.round(net * Math.exp(z * sigmaFactor) - costs);
+
+    // profit as a function of the opening noise factor — mirrors rollRelease
+    // exactly (the honesty contract), applying the factor only to opening and
+    // recomputing legs/streaming/ancillary downstream, NOT scaling the streaming
+    // additive base as a whole-net multiply would.
+    const moneyAt = (factor: number): number => {
+      let opening = baseOpening * factor;
+      if (strategy === "platform") opening = Math.min(opening, norm.opening * t.platformOpeningCap);
+      const box = opening * (1 + legsFactor * (strategy === "platform" ? 1.25 : 1));
+      const streaming =
+        (t.streamingBase + t.streamingAppeal * castAppeal + t.streamingCrowd * crowdBase) *
+        streamNorm *
+        streamingReach(box, norm.opening);
+      const ancillary = box * (t.ancillaryRate[film.genre] ?? 0);
+      const gross = box * t.theatricalShare + streaming + ancillary;
+      const net = gross * (1 - backendPoints / 100);
+      return windfallNet(net - costs).net;
+    };
+    const sigmaFactor = sigmaMoney / t.moneySigmaDiv;
+    // mean-1 lognormal (release.ts): median sits at e^{−σ²/2}, so the displayed
+    // median is the TRUE median and the film no longer beats its own forecast.
+    const at = (z: number) =>
+      Math.round(moneyAt(Math.exp(z * sigmaFactor - (sigmaFactor * sigmaFactor) / 2)));
     money = {
       min: at(-Z_TAIL),
       q1: at(-Z_QUART),

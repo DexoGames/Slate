@@ -6,11 +6,18 @@ import type { Genre } from "./types";
  */
 export const TUNING = {
   // ------------------------------------------------------------- economy
-  startingCash: 60, // $M
-  overheadPerSeason: 2.5, // $M, +0.5 per extra production slot
+  startingCash: 40, // $M
+  overheadPerSeason: 1.5, // $M, +0.5 per extra production slot
   overheadPerExtraSlot: 0.5,
-  /** studio share of theatrical box office */
-  theatricalShare: 0.5,
+  /** prestige costs money to keep: idle prestige piles decay (§5 recurring sink) */
+  overheadPerTier: 0.8,
+  /**
+   * Studio share of theatrical box office. Sized so the HONEST mean (mean-1
+   * noise, §1) is enough to run a studio — the mean-correction removed the old
+   * ~12% over-performance buffer, so the forecast centre is lifted to match,
+   * keeping "the average is the average" without making the game unwinnable.
+   */
+  theatricalShare: 0.57,
   /** library-sale lifeline: lump sum and the permanent streaming haircut */
   lifelineCash: 35,
   lifelineStreamingCut: 0.9,
@@ -18,7 +25,7 @@ export const TUNING = {
   lifelineMinFilms: 3,
   /** the credit facility: the industry lends against reputation */
   credit: {
-    base: 25, // $M limit at tier 1
+    base: 28, // $M limit at tier 1 — room to ride out an early flop and recover
     perTier: 10, // +$M per prestige tier above 1
     scheduledCollateral: 10, // +$M while a film is scheduled (it's collateral)
     interest: 0.025, // per season, on the drawn amount
@@ -50,9 +57,9 @@ export const TUNING = {
 
   // ------------------------------------------------------------- quality
   // E = execution (money CAN buy), A = ambition (money CANNOT), X = accessibility
-  eWeights: { craft: 0.4, cast: 0.2, coherence: 0.15, budget: 0.15, schedule: 0.1 },
+  eWeights: { craft: 0.38, cast: 0.2, coherence: 0.15, budget: 0.12, schedule: 0.15 },
   budgetAdequacy: { min: 0.5, max: 1.3 },
-  scheduleAdequacy: { min: 0.5, max: 1.15 },
+  scheduleAdequacy: { min: 0.4, max: 1.25 },
   synergyCrewEach: 4,
   synergyCrewMax: 8,
   synergyWriterDirector: 6,
@@ -63,19 +70,63 @@ export const TUNING = {
   /** X bonus for implementing test-screening notes (minor/major) */
   notesXBonus: { minor: 4, major: 8 },
 
+  // ------------------------------------------------------------- schedule (§1)
+  /**
+   * Shooting days are a three-way trade: money (fewer days → lower budget
+   * floor), safety (fewer days → crunch: more bad events, wider roll), growth
+   * (more days → talent develops, §3).
+   */
+  schedule: {
+    /** norm × (1 − pressureSpan) is maximal crunch */
+    pressureSpan: 0.5,
+    /** budget floor = norm.budget × budgetFloorPerDay × (days / norm.days) */
+    budgetFloorPerDay: 0.5,
+    absoluteFloor: 1.5,
+    /** extra release-roll sigma at full crunch */
+    crunchSigma: 4,
+    /** extra production-event probability at full crunch */
+    crunchEventP: 0.25,
+    /** days ≥ norm × unhurriedAt counts as an unhurried, steadier shoot */
+    unhurriedAt: 1.1,
+    unhurriedSigma: -1.5,
+    /** a lavish schedule (≥ norm × this) costs a whole extra season in production */
+    longScheduleExtraSeasonAt: 1.35,
+  },
+
   // ------------------------------------------------------------- release roll
   sigmaBase: 15,
   sigmaMin: 5,
-  sigmaMax: 30,
-  sigmaPerMajorDemand: 4,
+  sigmaMax: 34, // the wide end is wider now — no compromises = a real gamble (§1)
+  sigmaPerMajorDemand: 5,
   /** denying a major demand actively narrows the roll — denial IS a safety tool */
-  sigmaPerDeniedMajor: -1,
-  sigmaVolatilityMax: 10,
+  sigmaPerDeniedMajor: -2,
+  sigmaVolatilityMax: 11,
   sigmaAgainstType: 4, // acclaim axes only
-  sigmaNotes: -3,
-  sigmaReshoots: -2,
-  sigmaFocusMoney: -2, // money axis only
-  sigmaPlatformMoney: -3, // money axis only
+  // de-risking cuts, deeper (§6): compromises must genuinely narrow the roll and
+  // buy a higher floor — with mean-1 noise, narrowing σ pulls the low tail UP
+  sigmaNotes: -6,
+  sigmaReshoots: -6,
+  sigmaFocusMoney: -5, // money axis only
+  sigmaPlatformMoney: -5, // money axis only
+  /** an uncompromised film (vision ≥ this) is a wide, high-ceiling bet */
+  sigmaPureVisionAt: 90,
+  sigmaPureVision: 6,
+  ceilingPureVision: 3,
+
+  // ---------------------------------------------------------- catastrophe (§1)
+  /**
+   * The irreducible flop chance. Even a flawlessly de-risked production can
+   * crater for a reason nobody controls; mitigation shrinks the odds but never
+   * removes them. Applied as a heavy multiplier on opening (cascades to legs,
+   * box office and streaming). Not shown in the forecast — it's the surprise.
+   */
+  catastrophe: {
+    base: 0.03, // per wide release
+    bondMult: 0.6, // completion bond hedges the logistics disaster
+    reshootMult: 0.7, // reshoots patch a broken cut
+    unhurriedMult: 0.7, // an unhurried shoot has slack to absorb trouble
+    severity: 0.4, // opening keeps ~40% when it hits
+  },
   ceilingBase: 92,
   /**
    * Granted major: ceiling bonus scales with the director's TRUE craft
@@ -92,16 +143,47 @@ export const TUNING = {
 
   // ------------------------------------------------------------- money roll
   budgetExponent: 0.5,
-  appealMult: { base: 0.5, scale: 1.4 },
+  // star power is a bigger box-office lever now: a marquee cast lifts the ceiling
+  // hard, a no-name one still opens on its own modest floor (§3)
+  appealMult: { base: 0.55, scale: 1.95 },
+  /**
+   * Star economics (§3). Appeal (star power) is a steep, convex salary premium
+   * on top of the base curve — the very top stars cost tens of $M, a level-1
+   * draw is near the floor. And a cheap, low-appeal, unproven lead is a
+   * box-office GAMBLE: extra money-σ scaled by how little star wattage carries
+   * the opening. Buying a bankable star buys down that variance.
+   */
+  star: {
+    premium: 36, // $M at appeal 100 (before the convex exponent)
+    exponent: 3.2, // convex — only the very top is truly expensive
+    /** lead appeal below this reads as a draw risk */
+    reliableAppeal: 55,
+    /** extra money-σ for a low-appeal, low-experience lead */
+    unprovenSigma: 5,
+  },
   marketingMult: { base: 0.7, scale: 0.6, cap: 1.6 },
   competitionPerRival: 0.12,
   seasonMult: [0.95, 0.85, 1.35, 1.0] as const, // Winter Spring Summer Fall
   legsBase: 1.6,
   legsCrowdScale: 2.2,
-  moneySigmaDiv: 40,
+  // with mean-1 noise, a bigger σ pushes the MEDIAN below the mean; keep money
+  // variance moderate so a typical film still lands near its (honest) centre
+  moneySigmaDiv: 48,
   streamingBase: 5,
   streamingAppeal: 0.25,
   streamingCrowd: 0.1,
+  /**
+   * streaming reach scales with theatrical footprint: a tiny film collects a
+   * fraction of the streaming a wide hit does. This is the #1 micro-budget
+   * dominance guard — tune `base` down before ever touching budgetExponent.
+   */
+  streamingReach: { base: 0.25, scale: 0.75, div: 2.5 },
+  /**
+   * "the town's cut": a progressive haircut on huge single-film profit
+   * (gross participation, escalators, agency fees). Monotonic & continuous.
+   * ≤40 untouched; 40–120 keeps 80%; >120 keeps 55%.
+   */
+  windfall: { freeUpTo: 40, band1To: 120, band1Keep: 0.8, band2Keep: 0.55 },
   platformOpeningCap: 0.45, // platform release: opening capped to this × norm
   platformCriticBonus: 3,
   streamingSaleMult: 1.1, // guaranteed revenue = 1.1 × budget
@@ -139,16 +221,54 @@ export const TUNING = {
   perceptionAnchorWeight: 0.4,
   /** reputation-band half-width at familiarity 0, shrinking to ~2 at 1 */
   perceptionBandWidth: 14,
+  /**
+   * Experience is the scouting-confidence axis (§2). A veteran's hidden stats
+   * are publicly legible (perceptionExpKnow → how much of the truth shows) and
+   * read with a tight band; an unknown's are a wide-open guess. Working with
+   * them (familiarity) collapses the band the rest of the way.
+   */
+  perceptionExpKnow: 0.7,
+  perceptionExpBand: { atZero: 30, atFull: 4 },
   familiarityPerFilm: 0.35, // they direct for YOU
   familiarityPerYear: 0.05, // ambient industry knowledge, all directors
+  // actors: craft is hidden the way a director's is; a famous actor is a known
+  // quantity, an unknown is a wide-open bet (§2b)
+  perceptionActorAnchor: 50,
+  perceptionActorFameWeight: 0.6,
+  familiarityPerFilmActor: { major: 0.4, support: 0.25 },
+  screenTestCost: 0.3,
 
   // ------------------------------------------------------------- people market
   marketSize: { directors: 14, writers: 10, actors: 22, scripts: 8 },
   poolSize: { directors: 40, writers: 30, actors: 60 },
-  newPerYear: { directors: 2, writers: 2, actors: 4, scripts: 10 },
+  newPerYear: { directors: 2, writers: 2, actors: 5, scripts: 10 },
   highBothActorRate: 0.04,
-  highBothSalaryMult: 2.5,
+  highBothSalaryMult: 1.5, // the convex star premium (§3) does the heavy lifting now
   heatDecay: 0.75, // per year multiplier
+  /** the single salary curve everyone hangs off (§2a) */
+  salary: { fameSq: 12, skillDiv: 25, skillFameBase: 0.35, heatDiv: 20, mult: 0.85, floor: 0.3 },
+  /** share of new talent that arrives unknown — cheap, wide, a scouting bet (§2c) */
+  unknownActorRate: 0.3,
+  unknownDirectorRate: 0.25,
+  /** film-level tier legibility from budget (§2e) */
+  budgetClass: { micro: 5, indie: 20, mid: 60 },
+  /**
+   * Each script's natural budget as a factor of the genre norm (§4). A hooky,
+   * ambitious concept wants a bigger canvas; a small scrappy one wants less and
+   * caps lower on opening/appeal. factor = floorFactor + hook·hookScale +
+   * ambition·ambitionScale ± jitter, clamped to [minFactor, maxFactor].
+   */
+  scriptBudget: {
+    floorFactor: 0.35,
+    hookScale: 0.6,
+    ambitionScale: 0.25,
+    jitter: 0.12,
+    minFactor: 0.35,
+    maxFactor: 1.4,
+    /** how hard a small-canvas concept caps its own opening (§4) */
+    canvasBase: 0.68,
+    canvasScale: 0.36,
+  },
 
   // ------------------------------------------------------------- genre trends
   trend: {
@@ -174,11 +294,67 @@ export const TUNING = {
   teenLegsPenalty: 0.9,
   nostalgiaLegsBonus: 1.12,
   nostalgiaStreamBonus: 1.2,
-  /** chemistry between billed pairs: hash-based, −range..+range into E and X */
+  /** chemistry between billed pairs: hash-based seed, −range..+range into E and X */
   chemistryRange: 8,
   chemistryReadCost: 0.3,
+  /** chemistry v2 (§7): a dead zone (average chemistry does nothing), and pairs
+   * that re-team drift good→better / bad→worse, revealing themselves as they go */
+  chemistry: { deadZone: 3, growPositive: 3, growNegative: -2, cap: 12 },
   /** against-type: ambition bonus and accessibility risk scale with range */
   rangePivot: 60,
+
+  // ------------------------------------------------------------- growth (§3)
+  /** young talent that works improves toward its cap; long schedules mentor harder */
+  growth: {
+    actorCraft: 2.5,
+    actorRange: 1.5,
+    directorCraft: 2,
+    directorVision: 1,
+    youngAge: 36,
+    mentorScheduleAt: 1.1,
+    mentorMult: 1.5,
+    statCap: 90,
+  },
+
+  // ------------------------------------------------------- principal photography (§5)
+  /**
+   * The shoot swings the film's true E/A/X. Bias is pushed by chemistry,
+   * weighted cast passion, director craft and an unhurried schedule, and
+   * dragged down by crunch — but luck (sigma) is most of it, so the same plan
+   * can come back a triumph or a mess. Test screening reveals the swing;
+   * reshoots repair it (pull it `reshootRepair` of the way back to the plan).
+   */
+  shoot: {
+    chemWeight: 0.7,
+    passionWeight: 0.16,
+    passionPivot: 30, // ~average cast passion → a neutral shoot (no systemic bias)
+    craftWeight: 0.12,
+    craftPivot: 60,
+    unhurriedBonus: 5,
+    crunchPenalty: 12,
+    sigma: 11, // luck dominates — the shoot is genuinely uncertain
+    axisScale: { e: 1.0, a: 0.65, x: 0.8 }, // execution takes the shoot hardest
+    biasToSwing: 0.8,
+    swingCap: 30,
+    reshootRepair: 0.6, // reshoots pull the swing 60% back toward the plan
+    /** extra forecast σ while the shoot is unrevealed (untested) — the unknown */
+    forecastSigma: 8,
+  },
+
+  // ------------------------------------------------------------- passion (§4)
+  /** passion raises the ceiling only — what's possible, never what's guaranteed */
+  passion: {
+    base: 20,
+    workedWithDirector: 20,
+    relationshipWeight: 0.2,
+    overpayAt: 1.15,
+    overpayBonus: 15,
+    proveBonus: 20,
+    pitchWin: 15,
+    pitchLose: 5,
+    pitchChance: 0.65,
+    ceilingBonus: 6,
+  },
 
   // ------------------------------------------------------------- franchises
   franchise: {
@@ -287,8 +463,12 @@ export const TUNING = {
   awardStreamingBonus: 1.08,
 
   // ------------------------------------------------------------- campaign
-  campaignYears: 25,
+  campaignYears: 10, // the ten-year campaign (§8); endless mode is the sandbox
   scoreWeights: { profit: 0.3, prestige: 0.25, legacy: 0.35, awards: 0.1 },
+  /** lifetime profit ($M) for a perfect money grade over the campaign */
+  scoreProfitPar: 250,
+  /** legacy points for a perfect legacy grade over the campaign */
+  scoreLegacyPar: 90,
 } as const;
 
 export interface GenreNorm {

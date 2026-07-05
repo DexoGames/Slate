@@ -1,6 +1,7 @@
+import { schedulePressure } from "./schedule";
 import { GENRE_NORMS, TUNING } from "./tuning";
 import type { Director, Film } from "./types";
-import { clamp } from "./rng";
+import { clamp, normal, type Rng } from "./rng";
 
 /**
  * The latent quality vector, computed once at the end of post-production.
@@ -20,7 +21,11 @@ export function crowdLean(style: number): number {
   return 0.5 + 0.5 * ((100 - style) / 200);
 }
 
-export function computeLatent(film: Film, director: Director): Latent {
+export function computeLatent(
+  film: Film,
+  director: Director,
+  opts: { applyShoot?: boolean } = {},
+): Latent {
   const t = TUNING;
   const norm = GENRE_NORMS[film.genre];
   const script = film.script;
@@ -42,9 +47,11 @@ export function computeLatent(film: Film, director: Director): Latent {
         ? support.reduce((s, c) => s + c.craft, 0) / support.length
         : lead?.craft ?? 40);
 
+  // execution adequacy is measured against what the CONCEPT needs (§4), not the
+  // genre average: under-fund the script's own target and the seams show
   const ba = t.budgetAdequacy;
   const budgetAdequacy =
-    (100 * Math.min(ba.max, Math.max(ba.min, film.budget / norm.budget))) / ba.max;
+    (100 * Math.min(ba.max, Math.max(ba.min, film.budget / script.budgetTarget))) / ba.max;
   const sa = t.scheduleAdequacy;
   const scheduleAdequacy =
     (100 * Math.min(sa.max, Math.max(sa.min, film.shootingDays / norm.days))) / sa.max;
@@ -120,5 +127,52 @@ export function computeLatent(film: Film, director: Director): Latent {
       (director.traits.includes("crowd-whisperer") ? 4 : 0),
   );
 
-  return { E: Math.round(E), A: Math.round(A), X: Math.round(X) };
+  // principal photography swings the true quality (§5). The truth always carries
+  // the swing; the FORECAST passes applyShoot=false until a test screening reveals
+  // it. Studio reshoots repair the swing back toward the planned film.
+  const applyShoot = opts.applyShoot ?? true;
+  const sw = film.shoot;
+  let dE = 0;
+  let dA = 0;
+  let dX = 0;
+  if (applyShoot && sw) {
+    const repair = film.deRisking.studioReshoots ? 1 - t.shoot.reshootRepair : 1;
+    dE = sw.swingE * repair;
+    dA = sw.swingA * repair;
+    dX = sw.swingX * repair;
+  }
+
+  return {
+    E: Math.round(clamp(E + dE)),
+    A: Math.round(clamp(A + dA)),
+    X: Math.round(clamp(X + dX)),
+  };
+}
+
+/**
+ * Roll how principal photography went (§5): a hidden swing to the film's true
+ * E/A/X, pushed by chemistry / weighted passion / director craft / an unhurried
+ * schedule and dragged by crunch — but luck is most of it. Called once at the
+ * production→post flip; the result lives on `film.shoot`.
+ */
+export function rollShoot(
+  film: Film,
+  director: Director,
+  passionAvg: number,
+  rng: Rng,
+): { swingE: number; swingA: number; swingX: number } {
+  const s = TUNING.shoot;
+  const pressure = schedulePressure(film);
+  const bias =
+    film.castChemistry * s.chemWeight +
+    (passionAvg - s.passionPivot) * s.passionWeight +
+    (director.craft - s.craftPivot) * s.craftWeight +
+    (film.shootingDays >= GENRE_NORMS[film.genre].days * TUNING.schedule.unhurriedAt ? s.unhurriedBonus : 0) -
+    pressure * s.crunchPenalty;
+  const axis = (scale: number) =>
+    Math.max(
+      -s.swingCap,
+      Math.min(s.swingCap, Math.round(bias * s.biasToSwing * scale + normal(rng, 0, s.sigma))),
+    );
+  return { swingE: axis(s.axisScale.e), swingA: axis(s.axisScale.a), swingX: axis(s.axisScale.x) };
 }

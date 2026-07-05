@@ -7,7 +7,7 @@ import { TUNING } from "./tuning";
 import type { GameMode, GameState, Market, Writer } from "./types";
 import { int, makeRng, pick, type Rng } from "./rng";
 
-export const SAVE_VERSION = 6;
+export const SAVE_VERSION = 8;
 
 export function createMarket(rng: Rng, ids: { counter: number }): Market {
   const used = new Set<string>();
@@ -57,6 +57,8 @@ export function newGame(seed: number, mode: GameMode, studioName?: string): Game
       relationships: {},
       familiarity,
       franchises: [],
+      pairChemistry: {},
+      chemistryReads: [],
       contracts: {},
       promises: [],
     },

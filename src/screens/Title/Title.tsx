@@ -43,7 +43,7 @@ export function Title({
           <Button onClick={onContinue}>Continue</Button>
         )}
         <Button variant={hasSave ? "secondary" : "primary"} onClick={start}>
-          New campaign · {TUNING.campaignYears} years
+          The Ten-Year Campaign
         </Button>
         <Button variant="secondary" onClick={() => setShowScenarios(!showScenarios)}>
           Scenarios

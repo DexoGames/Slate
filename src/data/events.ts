@@ -12,6 +12,10 @@ export interface ProductionEventDef {
   needsTemperament?: number; // min lead temperament
   needsVolatility?: number; // min director volatility
   bigBudgetOnly?: boolean;
+  /** only fires when schedule pressure ≥ this (0..1); crunch-born trouble (§1) */
+  crunchOnly?: number;
+  /** only fires when a billed pair's chemistry ≤ this (negative); §7 */
+  needsBadChemistry?: number;
   trust: {
     label: string;
     effect: string; // human-readable cost line
@@ -21,6 +25,7 @@ export interface ProductionEventDef {
     vp?: number;
     sigma?: number; // note: applied as production wobble, not release sigma
     relationship?: number;
+    days?: number; // buy shooting days back (relieves crunch pressure)
   };
   protect: {
     label: string;
@@ -30,6 +35,7 @@ export interface ProductionEventDef {
     ePenalty?: number;
     vp?: number;
     relationship?: number;
+    days?: number;
   };
   /** if true, completion bond absorbs the cash cost of either branch */
   bondable?: boolean;
@@ -127,5 +133,39 @@ export const PRODUCTION_EVENTS: ProductionEventDef[] = [
     bondable: true,
     trust: { label: "Reshoot it properly", effect: "-$3M (bond covers if held)", cash: -3 },
     protect: { label: "Cut the scene", effect: "-4 Execution", ePenalty: 4 },
+  },
+  // ---- crunch-born trouble: only fires on a compressed schedule (§1) ----
+  {
+    id: "schedule-villain",
+    title: "THE SCHEDULE IS THE VILLAIN",
+    body: "The board is red and the days are gone. The first AD hands you a choice you already knew was coming: find the money for more time, or find out what a rushed third act looks like.",
+    crunchOnly: 0.3,
+    trust: { label: "Buy five days back", effect: "-$3M · +5 shooting days · crunch eases", cash: -3, days: 5 },
+    protect: { label: "Wrap it as-is", effect: "-5 Execution · the seams show", ePenalty: 5 },
+  },
+  {
+    id: "second-unit",
+    title: "SECOND UNIT, FIRST MISTAKE",
+    body: "To make the day, half the film is being shot by a second unit that has never met the director. The footage is… confident. It is not, however, the same movie.",
+    crunchOnly: 0.3,
+    trust: { label: "Cut it together and pray", effect: "Wider forecast", sigma: 3 },
+    protect: { label: "Reshoot the unit's work", effect: "-$2M", cash: -2 },
+  },
+  {
+    id: "no-sleep",
+    title: "NOBODY HAS SLEPT SINCE TUESDAY",
+    body: "The crew is running on fumes and vending-machine coffee. Tempers are gone. Someone rigged a bed into the grip truck. The director quietly asks you to just trust the cut and let everyone go home.",
+    crunchOnly: 0.3,
+    trust: { label: "Trust the cut, send them home", effect: "-4 Execution · the director won't forget it", ePenalty: 4, relationship: 3 },
+    protect: { label: "Pay the overtime", effect: "-$1.5M · no penalty", cash: -1.5 },
+  },
+  // ---- a billed pairing that simply does not work (§7) ----
+  {
+    id: "cold-front",
+    title: "COLD WAR ON STAGE 4",
+    body: "Two of your leads have stopped speaking except in the takes, and even then it's frosty. The AD has drawn an invisible line down the middle of the set. The dailies feel like a hostage negotiation.",
+    needsBadChemistry: -6,
+    trust: { label: "Shoot around it", effect: "Wider forecast · you'll fix it in the edit", sigma: 2 },
+    protect: { label: "Producer-mediated truce", effect: "-$2M · a very expensive dinner", cash: -2 },
   },
 ];

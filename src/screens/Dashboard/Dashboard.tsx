@@ -5,7 +5,14 @@ import { StagePips } from "../../components/StagePips/StagePips";
 import { VisionMeter } from "../../components/VisionMeter/VisionMeter";
 import { creditLeft, interestDue } from "../../engine/economy";
 import { filmNeedsAction } from "../../engine/needs";
-import { productionSlots } from "../../engine/score";
+import { BUDGET_CLASS_LABELS, budgetClass } from "../../engine/schedule";
+import {
+  nextTierThreshold,
+  prestigeTier,
+  productionSlots,
+  TIER_NUMERALS,
+  tierName,
+} from "../../engine/score";
 import { GENRE_LABELS, TUNING } from "../../engine/tuning";
 import type { Film, GameState } from "../../engine/types";
 import { filmVision } from "../../engine/vision";
@@ -43,6 +50,9 @@ export function Dashboard({
   const slots = productionSlots(game.studio.legacyPoints);
   const inFlight = active.filter((f) => f.stage !== "development").length;
   const blocked = game.pendingEvents.length > 0;
+  const tier = prestigeTier(game.studio.legacyPoints);
+  const nextTh = nextTierThreshold(game.studio.legacyPoints);
+  const nextSlots = nextTh !== null ? TUNING.slotsByTier[tier] : slots;
 
   return (
     <div className={styles.grid}>
@@ -77,6 +87,7 @@ export function Dashboard({
                 </span>
                 <div className={styles.chips}>
                   <StatChip icon={<IconMoney size={13} />} value={fmtMoney(f.budget)} color="var(--stat-money)" />
+                  <span className={styles.budgetClass}>{BUDGET_CLASS_LABELS[budgetClass(f.budget)]}</span>
                   {f.release && (
                     <StatChip
                       icon={<IconCalendar size={13} />}
@@ -127,6 +138,20 @@ export function Dashboard({
           <Button className={styles.advance} onClick={onAdvance} disabled={blocked}>
             {blocked ? "RESOLVE PRODUCTION EVENTS" : `ADVANCE TO ${nextSeasonLabel(game)}`} <IconChevron size={13} />
           </Button>
+        </Panel>
+        <Panel>
+          <SectionTitle>STUDIO STANDING</SectionTitle>
+          <p className={styles.tierNow}>
+            TIER {TIER_NUMERALS[tier - 1]} · {tierName(tier)}
+          </p>
+          {nextTh !== null ? (
+            <p className={styles.tierNext}>
+              NEXT: {nextSlots} PRODUCTION SLOT{nextSlots > 1 ? "S" : ""} + $
+              {TUNING.credit.perTier}M CREDIT AT {nextTh} LEGACY PTS
+            </p>
+          ) : (
+            <p className={styles.tierNext}>THE TOP OF THE TOWN. A dream factory.</p>
+          )}
         </Panel>
         <Panel>
           <SectionTitle>STANDINGS</SectionTitle>

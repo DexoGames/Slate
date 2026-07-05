@@ -129,3 +129,192 @@
 .player span:first-of-type {
     color: var(--orange);
 }
+
+/* ---- the awards ceremony (§9) ---- */
+.ceremony {
+    min-height: calc(100vh - var(--hud-h) - 34px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 20px;
+    text-align: center;
+    padding: 24px;
+    cursor: pointer;
+}
+
+.ceremonyKicker {
+    font-size: 0.62rem;
+    font-weight: 700;
+    letter-spacing: 0.3em;
+    color: var(--gold);
+}
+
+.ceremonyCat {
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 5vw, 2.4rem);
+    text-transform: uppercase;
+    color: var(--bone);
+}
+
+.nomList {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-height: 120px;
+    justify-content: center;
+}
+
+.nominee {
+    font-size: 0.9rem;
+    color: var(--bone-dim);
+    animation: nomIn 0.5s ease both;
+    transition: opacity 0.4s ease, color 0.4s ease;
+}
+
+.nominee em {
+    font-style: normal;
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    color: var(--orange);
+}
+
+@keyframes nomIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: none;
+    }
+}
+
+.nomineeFade {
+    opacity: 0.3;
+}
+
+.nomineeWon {
+    color: var(--gold);
+    font-weight: 700;
+}
+
+.envelope {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.16em;
+    color: var(--bone-dim);
+    animation: pulseSoft 1s ease infinite;
+}
+
+@keyframes pulseSoft {
+    50% {
+        opacity: 0.45;
+    }
+}
+
+.winnerStamp {
+    font-family: var(--font-display);
+    font-size: clamp(1.6rem, 6vw, 3rem);
+    text-transform: uppercase;
+    color: var(--bone);
+    border: 4px solid var(--line-strong);
+    padding: 8px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: stampIn 0.35s cubic-bezier(0.2, 2.4, 0.4, 1) both;
+    rotate: -2deg;
+}
+
+.winnerYours {
+    color: var(--gold);
+    border-color: var(--gold);
+    box-shadow: 0 0 30px rgba(240, 180, 41, 0.35);
+    animation: stampIn 0.35s cubic-bezier(0.2, 2.4, 0.4, 1) both, goldFlash 0.6s ease 0.35s;
+}
+
+.burst {
+    font-size: 0.7rem;
+    letter-spacing: 0.24em;
+    color: var(--gold-ink);
+    background: var(--gold);
+    padding: 2px 0;
+}
+
+@keyframes stampIn {
+    from {
+        opacity: 0;
+        scale: 2.2;
+    }
+
+    to {
+        opacity: 1;
+        scale: 1;
+    }
+}
+
+@keyframes goldFlash {
+    30% {
+        background: rgba(240, 180, 41, 0.25);
+    }
+
+    100% {
+        background: transparent;
+    }
+}
+
+.dots {
+    display: flex;
+    gap: 8px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    border: 1px solid var(--line-strong);
+    background: transparent;
+}
+
+.dotOn {
+    background: var(--gold);
+    border-color: var(--gold);
+}
+
+.dotDone {
+    background: var(--bone-dim);
+    border-color: var(--bone-dim);
+}
+
+.skipHint {
+    font-size: 0.56rem;
+    letter-spacing: 0.1em;
+    color: var(--bone-dim);
+    opacity: 0.6;
+}
+
+/* the trades reclassify you — stamped like a verdict (§10 tier-up) */
+.tierStamp {
+    align-self: center;
+    font-family: var(--font-display);
+    font-size: clamp(1rem, 3.5vw, 1.6rem);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--gold);
+    border: 3px solid var(--gold);
+    padding: 6px 18px;
+    rotate: -2deg;
+    animation: stampIn 0.4s cubic-bezier(0.2, 2.4, 0.4, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+
+    .nominee,
+    .winnerStamp,
+    .winnerYours,
+    .tierStamp,
+    .envelope {
+        animation: none;
+    }
+}

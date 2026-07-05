@@ -36,11 +36,33 @@ describe("policy bots (the no-dominant-strategy contract)", () => {
   const selective = stats(runBatch("selectiveDeny", N, YEARS));
   const farmer = stats(runBatch("franchiseFarmer", N, YEARS));
   const hype = stats(runBatch("hypeAbuser", N, YEARS));
+  const micro = stats(runBatch("microBudget", N, YEARS));
+  const nurture = stats(runBatch("nurture", N, YEARS));
 
   it("prints the tuning table", () => {
     // eslint-disable-next-line no-console
-    console.table({ safety, vision, balanced, selective, farmer, hype });
+    console.table({ safety, vision, balanced, selective, farmer, hype, micro, nurture });
     expect(true).toBe(true);
+  });
+
+  it("micro-budget is viable but not a dominant strategy", () => {
+    // cheap films are a real, survivable path…
+    expect(micro.meanReleased).toBeGreaterThan(3);
+    expect(micro.bankruptRate).toBeLessThan(0.5);
+    // …but they don't run away with the composite score
+    expect(micro.meanScore).toBeLessThanOrEqual(Math.max(selective.meanScore, balanced.meanScore) * 1.1);
+  });
+
+  it("nurture is a viable, distinctive path: the most beloved films, competitive score", () => {
+    // building people is survivable and productive
+    expect(nurture.bankruptRate).toBeLessThan(0.5);
+    expect(nurture.meanReleased).toBeGreaterThan(3);
+    // passion + persistent chemistry + growth surface as the HIGHEST rate of
+    // double-high acclaim — the nurture fantasy pays off in the films themselves
+    expect(nurture.highBothRate).toBeGreaterThan(balanced.highBothRate);
+    // it competes with the balanced default without dominating selective play
+    expect(nurture.meanScore).toBeGreaterThan(balanced.meanScore * 0.9);
+    expect(nurture.meanScore).toBeLessThanOrEqual(selective.meanScore * 1.1);
   });
 
   it("franchise farming is safe money that starves legacy", () => {
@@ -61,7 +83,9 @@ describe("policy bots (the no-dominant-strategy contract)", () => {
 
   it("bots actually play: everyone releases films", () => {
     expect(safety.meanReleased).toBeGreaterThan(3);
-    expect(vision.meanReleased).toBeGreaterThan(1.5);
+    // vision is the riskiest way to live and, under the tighter v3 economy
+    // (the town's cut + tier overhead), the naive all-in bot bankrupts sooner
+    expect(vision.meanReleased).toBeGreaterThan(1.2);
     expect(balanced.meanReleased).toBeGreaterThan(3);
   });
 

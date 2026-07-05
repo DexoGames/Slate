@@ -158,6 +158,30 @@
     color: var(--danger);
 }
 
+.budgetClass {
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--bone-dim);
+    border: 1px solid var(--line-strong);
+    padding: 1px 5px;
+    align-self: center;
+}
+
+.tierNow {
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: var(--stat-legacy);
+}
+
+.tierNext {
+    font-size: 0.62rem;
+    letter-spacing: 0.04em;
+    color: var(--bone-dim);
+    margin-top: 3px;
+}
+
 /* passion-project debts — quiet gold until the deadline year, then loud */
 .promise {
     font-size: 0.62rem;

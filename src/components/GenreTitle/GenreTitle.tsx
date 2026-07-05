@@ -1,4 +1,4 @@
-import type { ElementType, ReactNode } from "react";
+import type { ElementType, HTMLAttributes, ReactNode } from "react";
 import type { Genre } from "../../engine/types";
 import { cx } from "../../lib/cx";
 import styles from "./GenreTitle.module.css";
@@ -15,11 +15,16 @@ export function GenreTitle({
   children,
   className,
   as: Tag = "span",
+  ...rest
 }: {
   genre: Genre;
   children: ReactNode;
   className?: string;
   as?: ElementType;
-}) {
-  return <Tag className={cx(styles.title, styles[genre], className)}>{children}</Tag>;
+} & HTMLAttributes<HTMLElement>) {
+  return (
+    <Tag className={cx(styles.title, styles[genre], className)} {...rest}>
+      {children}
+    </Tag>
+  );
 }

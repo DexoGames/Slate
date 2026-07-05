@@ -4,8 +4,9 @@ import { canAfford } from "../engine/economy";
 import { applyRewrite } from "../engine/generate/scripts";
 import { newGame } from "../engine/newGame";
 import { developPassionScript, developSequelScript } from "../engine/franchise";
-import { castChemistry, walkAwayRisk } from "../engine/negotiation";
+import { castChemistry, isPairKnown, pairKey, walkAwayRisk } from "../engine/negotiation";
 import { computeLatent } from "../engine/quality";
+import { minBudgetFor } from "../engine/schedule";
 import { advanceSeason, directorOf } from "../engine/season";
 import { computeCampaignScore } from "../engine/score";
 import { GENRE_NORMS, TUNING } from "../engine/tuning";
@@ -31,9 +32,12 @@ export type Action =
   | { type: "GO_TO"; screen: ScreenId }
   | { type: "BUY_SCRIPT"; scriptId: string }
   | { type: "REWRITE"; filmId: string; byFixer: boolean }
+  | { type: "RENAME_FILM"; filmId: string; title: string }
   | { type: "ABANDON_FILM"; filmId: string }
   | { type: "HIRE_DIRECTOR"; filmId: string; directorId: string; decisions: DemandDecision[] }
   | { type: "SET_CAST"; filmId: string; cast: CastSlot[]; contractActorIds?: string[] }
+  | { type: "SCREEN_TEST"; actorId: string }
+  | { type: "CHEMISTRY_READ"; aId: string; bId: string }
   | { type: "GREENLIGHT"; filmId: string; budget: number; days: number; bond: boolean }
   | { type: "RESOLVE_EVENT"; filmId: string; eventId: string; choice: "trust" | "protect" }
   | {
@@ -165,7 +169,21 @@ export function gameReducer(state: GameState, action: Action): GameState {
         vpDelta !== 0
           ? [...film.visionLedger, { label: `Rewrite pass ${passNo}${action.byFixer ? " (fixer)" : ""}`, delta: vpDelta }]
           : film.visionLedger;
-      return withFilm(spend(state, cost), { ...film, script, title: script.title, visionLedger: ledger });
+      return withFilm(spend(state, cost), {
+        ...film,
+        script,
+        // a rewrite renames from the new draft — unless the player chose a title (§11)
+        title: film.customTitle ? film.title : script.title,
+        visionLedger: ledger,
+      });
+    }
+
+    case "RENAME_FILM": {
+      const film = state.films[action.filmId];
+      if (!film || film.stage !== "development") return state;
+      const title = action.title.trim().slice(0, 40);
+      if (!title) return state;
+      return withFilm(state, { ...film, title, customTitle: true });
     }
 
     case "ABANDON_FILM": {
@@ -330,9 +348,38 @@ export function gameReducer(state: GameState, action: Action): GameState {
       return withFilm(s, {
         ...film,
         cast,
-        castChemistry: castChemistry(state.seed, cast),
+        castChemistry: castChemistry(state, cast),
         talentCost: round1(film.talentCost + totalSalary),
       });
+    }
+
+    case "SCREEN_TEST": {
+      // pay to see an unknown clearly before you bet a film on them (§2b)
+      const fam = state.studio.familiarity[action.actorId] ?? 0;
+      if (fam >= 0.5 || !canAfford(state, TUNING.screenTestCost)) return state;
+      const s = spend(state, TUNING.screenTestCost);
+      return {
+        ...s,
+        studio: {
+          ...s.studio,
+          familiarity: { ...s.studio.familiarity, [action.actorId]: Math.min(1, fam + 0.5) },
+        },
+      };
+    }
+
+    case "CHEMISTRY_READ": {
+      // pay to reveal an untested pairing before committing to it (§7)
+      if (isPairKnown(state, action.aId, action.bId) || !canAfford(state, TUNING.chemistryReadCost)) {
+        return state;
+      }
+      const s = spend(state, TUNING.chemistryReadCost);
+      return {
+        ...s,
+        studio: {
+          ...s.studio,
+          chemistryReads: [...s.studio.chemistryReads, pairKey(action.aId, action.bId)],
+        },
+      };
     }
 
     case "GREENLIGHT": {
@@ -343,8 +390,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
       // enforce granted floors
       const floor = film.demands.find((d) => d.granted && d.demand.kind === "budget-floor")?.demand.budgetFloor;
       const minDays = film.demands.find((d) => d.granted && d.demand.kind === "shooting-days")?.demand.days;
-      const budget = Math.max(action.budget, floor ?? 0);
       const days = Math.max(action.days, minDays ?? 0);
+      // a short shoot lets you make it cheap; the floor scales with the days (§1)
+      const budget = Math.max(action.budget, floor ?? 0, minBudgetFor(film.genre, days, film.script.budgetTarget));
       const bondCost = action.bond ? round1(budget * TUNING.completionBondPct) : 0;
       // granted craft demands with price tags land on the production bill here
       const demandCosts = film.demands.reduce(
@@ -396,6 +444,9 @@ export function gameReducer(state: GameState, action: Action): GameState {
         };
       }
 
+      // a lavish schedule costs a whole extra quarter in production (§1)
+      const norm = GENRE_NORMS[film.genre];
+      const extraSeason = days >= norm.days * TUNING.schedule.longScheduleExtraSeasonAt ? 1 : 0;
       return withFilm(s, {
         ...film,
         budget,
@@ -403,7 +454,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         overruns: round1(film.overruns + demandCosts),
         deRisking: { ...film.deRisking, completionBond: action.bond },
         stage: "production",
-        stageSeasonsLeft: GENRE_NORMS[film.genre].prodSeasons,
+        stageSeasonsLeft: norm.prodSeasons + extraSeason,
         greenlitAt: state.clock,
         visionLedger: ledger,
       });
@@ -524,7 +575,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         const next: Film = {
           ...film,
           cast,
-          castChemistry: castChemistry(s.seed, cast),
+          castChemistry: castChemistry(s, cast),
           overruns: round1(film.overruns + cost),
           eventHistory: [
             ...film.eventHistory,
@@ -550,6 +601,7 @@ export function gameReducer(state: GameState, action: Action): GameState {
         productionBonus: film.productionBonus + (branch.eBonus ?? 0),
         productionPenalty: film.productionPenalty + (branch.ePenalty ?? 0),
         eventSigma: film.eventSigma + sigma,
+        shootingDays: film.shootingDays + (branch.days ?? 0),
         overruns: round1(film.overruns + cash),
         visionLedger: branch.vp
           ? [...film.visionLedger, { label: pending.title, delta: branch.vp }]

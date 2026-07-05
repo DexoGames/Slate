@@ -1,5 +1,13 @@
 import { TUNING } from "./tuning";
-import type { Director, Film, FranchiseIP, LegacyEvent, LegacyState } from "./types";
+import type {
+  Director,
+  EpilogueEntry,
+  Film,
+  FranchiseIP,
+  GameState,
+  LegacyEvent,
+  LegacyState,
+} from "./types";
 import { chance, clamp, normal, pick, range, type Rng } from "./rng";
 import { filmVision, legacyGate } from "./vision";
 
@@ -139,4 +147,60 @@ export function legacyPointsFor(score: number): number {
   if (score >= t.cult) return p.cult;
   if (score >= t.fine) return p.fine;
   return 0;
+}
+
+/**
+ * The "ten years later" fast-forward (§8). Every legacy-eligible film that
+ * hasn't locked yet is ticked year-by-year to its final verdict, its points
+ * credited to the studio. Returns the settled state and one entry per film for
+ * the epilogue reel. Called at campaign end, BEFORE the final score.
+ */
+export function resolveEpilogue(
+  rng: Rng,
+  state: GameState,
+): { state: GameState; entries: EpilogueEntry[] } {
+  const entries: EpilogueEntry[] = [];
+  const films = { ...state.films };
+  // legacy has already ticked through the last campaign year; continue past it
+  const endedYear = state.clock.year - 1;
+  let addedPoints = 0;
+  for (const id of state.studio.filmIds) {
+    const film = films[id];
+    if (!film?.legacy || !film.result || !film.legacy.eligible) continue;
+    let legacy = film.legacy;
+    let year = endedYear + 1;
+    let guard = TUNING.legacyYears + 3;
+    while (!legacy.locked && guard-- > 0) {
+      legacy = tickLegacy(rng, legacy, year).legacy;
+      year++;
+    }
+    films[id] = { ...film, legacy };
+    if (!legacy.locked || legacy.finalScore === undefined) continue;
+    const pts = legacyPointsFor(legacy.finalScore);
+    addedPoints += pts;
+    let best: LegacyEvent | undefined;
+    let worst: LegacyEvent | undefined;
+    for (const e of legacy.events) {
+      if (!best || e.delta > best.delta) best = e;
+      if (!worst || e.delta < worst.delta) worst = e;
+    }
+    entries.push({
+      filmId: id,
+      title: film.title,
+      genre: film.genre,
+      finalScore: legacy.finalScore,
+      tier: legacyTierLabel(legacy.finalScore) ?? "A FOOTNOTE",
+      bestEventLabel: best && best.delta > 0 ? best.label : undefined,
+      worstEventLabel: worst && worst.delta < 0 ? worst.label : undefined,
+      pointsGained: pts,
+    });
+  }
+  return {
+    state: {
+      ...state,
+      films,
+      studio: { ...state.studio, legacyPoints: state.studio.legacyPoints + addedPoints },
+    },
+    entries,
+  };
 }

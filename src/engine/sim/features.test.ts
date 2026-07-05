@@ -37,6 +37,7 @@ const film = (over: Partial<Film> = {}): Film => ({
     ambition: 40,
     coherence: 60,
     buzz: 40,
+    budgetTarget: 100,
     writerId: "w1",
     writerName: "W",
     rewrites: [],
@@ -85,6 +86,7 @@ const director = (): Director => ({
   heat: 0,
   salary: 5,
   traits: [],
+  experience: 70,
   craft: 60,
   vision: 50,
   style: -10,
@@ -114,6 +116,8 @@ describe("franchise farming", () => {
           streaming: 20,
           ancillary: 10,
           profit: 40,
+          grossProfit: 40,
+          windfallCut: 0,
           crowdScore: 90, // meets expectations every time
           criticScore: 55,
           verdict: "hit",
@@ -131,14 +135,14 @@ describe("franchise farming", () => {
     const start = ip();
     const met = settleInstalment(
       start,
-      film({ result: { opening: 50, boxOffice: 150, streaming: 20, ancillary: 10, profit: 40, crowdScore: 80, criticScore: 55, verdict: "hit", breakdown: [] } }),
+      film({ result: { opening: 50, boxOffice: 150, streaming: 20, ancillary: 10, profit: 40, grossProfit: 40, windfallCut: 0, crowdScore: 80, criticScore: 55, verdict: "hit", breakdown: [] } }),
     );
     expect(met.verdict).toBe("met");
     expect(met.ip.expectation).toBeGreaterThan(start.expectation);
 
     const missed = settleInstalment(
       start,
-      film({ result: { opening: 50, boxOffice: 90, streaming: 20, ancillary: 10, profit: -20, crowdScore: 50, criticScore: 55, verdict: "flop", breakdown: [] } }),
+      film({ result: { opening: 50, boxOffice: 90, streaming: 20, ancillary: 10, profit: -20, grossProfit: -20, windfallCut: 0, crowdScore: 50, criticScore: 55, verdict: "flop", breakdown: [] } }),
     );
     expect(missed.verdict).toBe("missed");
     expect(missed.ip.awareness).toBeLessThan(start.awareness);

@@ -15,6 +15,254 @@
     display: flex;
     flex-direction: column;
     gap: 14px;
+    /* a long chemistry list scrolls INSIDE the sidebar so the CTA never gets
+       pushed off-screen (§13) */
+    max-height: calc(100vh - var(--hud-h) - 24px);
+    overflow-y: auto;
+}
+
+/* the cast summary carries the CTA at the top of the sticky sidebar */
+.summary {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.summaryEmpty {
+    font-size: 0.7rem;
+    color: var(--bone-dim);
+    font-style: italic;
+}
+
+.summaryList {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.summaryList li {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+    font-size: 0.74rem;
+}
+
+.summaryList b {
+    color: var(--bone);
+}
+
+.summaryList em {
+    font-style: normal;
+    font-size: 0.56rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--orange);
+}
+
+.summarySalary {
+    margin-left: auto;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--stat-money);
+}
+
+.summaryChips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chemPanel {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    border-top: 1px solid var(--line-strong);
+    padding-top: 8px;
+}
+
+.chemHead {
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    color: var(--bone-dim);
+}
+
+.chemPair {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.62rem;
+}
+
+.chemNames {
+    color: var(--bone-dim);
+    white-space: nowrap;
+}
+
+.chemBadge {
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+}
+
+.chemGood {
+    color: var(--gold);
+}
+
+.chemBad {
+    color: var(--danger);
+}
+
+.chemPro {
+    color: var(--bone-dim);
+}
+
+.chemUntested {
+    color: var(--stat-critic);
+}
+
+.chemRead {
+    margin-left: auto;
+    background: transparent;
+    border: 1px solid var(--stat-money);
+    color: var(--stat-money);
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 5px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.chemRead:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.lockBtn {
+    margin-top: 4px;
+}
+
+/* young talent scouts already whisper about (public flavour, not a stat leak) */
+.ribbonProspect {
+    background: var(--stat-legacy);
+    color: var(--black);
+}
+
+.clicksRibbon {
+    align-self: flex-start;
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--gold);
+    border: 1px solid rgba(232, 185, 35, 0.4);
+    padding: 2px 6px;
+}
+
+.rapport {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--bone-dim);
+    white-space: nowrap;
+}
+
+.heart {
+    color: var(--velvet);
+}
+
+.screenTest {
+    align-self: flex-start;
+    font-size: 0.56rem;
+    padding: 4px 8px;
+}
+
+.sweeten {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--bone-dim);
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.sweetenOn {
+    color: var(--gold);
+}
+
+.sweeten input {
+    accent-color: var(--gold);
+}
+
+.passionRow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.passionLabel {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--bone-dim);
+    white-space: nowrap;
+}
+
+.passionPips {
+    display: inline-flex;
+    gap: 3px;
+}
+
+.passionPip {
+    width: 8px;
+    height: 8px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-strong);
+}
+
+.passionPipOn {
+    background: var(--gold);
+    border-color: var(--gold);
+}
+
+.pitchBtn {
+    background: transparent;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 0.52rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    padding: 2px 8px;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.pitchResult {
+    display: inline-flex;
+    align-items: center;
+    font-size: 0.56rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+    padding: 0 6px;
+}
+
+.pitchWon {
+    color: var(--gold);
+}
+
+.pitchLost {
+    color: var(--bone-dim);
 }
 
 .head {
@@ -38,14 +286,14 @@
 
 .actors {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
     gap: 12px;
 }
 
 .card {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .picked {
@@ -102,9 +350,21 @@
     gap: 8px;
 }
 
+.headMain {
+    min-width: 0;
+}
+
+.headRight {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex: 0 0 auto;
+}
+
 .name {
     font-family: var(--font-display);
-    font-size: 0.92rem;
+    font-size: 0.95rem;
     line-height: 1.05;
     text-transform: uppercase;
     color: var(--bone);
@@ -114,24 +374,85 @@
     font-size: 1.02rem;
 }
 
-/* star-power pips */
-.starRow {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.starRowLabel {
-    flex: 0 0 auto;
-    font-size: 0.54rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    color: var(--bone-dim);
-}
-
+/* star-power pips — the corner badge; the count alone reads as star power */
 .starPips {
     display: inline-flex;
     gap: 3px;
+}
+
+/* experience: a thin public meter — drives how tight the craft/range read is */
+.miniRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.expMeter {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    flex: 1;
+    min-width: 0;
+    cursor: help;
+}
+
+.expLabel {
+    font-size: 0.5rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    color: var(--bone-dim);
+}
+
+.expTrack {
+    position: relative;
+    flex: 1;
+    height: 5px;
+    min-width: 36px;
+    background: var(--black-soft-2);
+    border: 1px solid var(--line-strong);
+}
+
+.expTrack i {
+    position: absolute;
+    inset: 0 auto 0 0;
+    background: var(--stat-legacy);
+}
+
+.tagRow {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+}
+
+.clicksTag {
+    font-size: 0.54rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: var(--gold);
+    border: 1px solid rgba(232, 185, 35, 0.4);
+    padding: 1px 5px;
+    white-space: nowrap;
+    cursor: help;
+}
+
+/* the ONLY region that changes when a card is selected — its height is reserved
+   so picking an actor never resizes the card or shifts the row (§UI) */
+.actionArea {
+    margin-top: auto;
+    padding-top: 4px;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    gap: 6px;
+    min-height: 72px;
+}
+
+.pickedBtns {
+    display: flex;
+    align-items: stretch;
+    gap: 6px;
 }
 
 .starPip {
@@ -230,7 +551,6 @@
 .roleBtns {
     display: flex;
     gap: 6px;
-    margin-top: auto;
 }
 
 .roleBtn,
@@ -264,18 +584,28 @@
 }
 
 .contract {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
-    font-size: 0.56rem;
+    gap: 3px;
+    font-size: 0.5rem;
     font-weight: 700;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.04em;
     color: var(--bone-dim);
+    border: 1px solid var(--line-strong);
+    padding: 0 5px;
     cursor: pointer;
+    white-space: nowrap;
+}
+
+.contractOn {
+    color: var(--gold);
+    border-color: var(--gold);
 }
 
 .contract input {
-    accent-color: var(--orange);
+    accent-color: var(--gold);
+    width: 10px;
+    height: 10px;
 }
 
 .dealRow {

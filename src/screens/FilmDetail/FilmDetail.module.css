@@ -43,11 +43,51 @@
     color: var(--orange);
 }
 
+.budgetClass {
+    color: var(--bone-dim);
+    letter-spacing: 0.1em;
+    margin-left: 4px;
+}
+
+.titleRow {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
 .title {
     font-size: clamp(1.4rem, 4vw, 2.2rem);
-    line-height: 0.95;
+    /* room for tall display swashes above the director line below (§13) */
+    line-height: 1.12;
+    margin-bottom: 0.14em;
     text-transform: uppercase;
     color: var(--bone);
+}
+
+.renameBtn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--bone-dim);
+    font-size: 1rem;
+    line-height: 1;
+    padding: 2px 4px;
+    flex-shrink: 0;
+}
+
+.renameBtn:hover {
+    color: var(--orange);
+}
+
+/* editing in place: no box, no reflow — just a caret and a thin baseline so the
+   title stays exactly where it sits when not editing (§UI). The :focus/:focus-visible
+   overrides beat the app's global focus-ring so no box appears. */
+.titleEditing,
+.titleEditing:focus,
+.titleEditing:focus-visible {
+    outline: none;
+    caret-color: var(--orange);
+    box-shadow: inset 0 -2px 0 var(--orange);
 }
 
 .dirLine {
@@ -55,6 +95,24 @@
     letter-spacing: 0.06em;
     text-transform: uppercase;
     color: var(--bone-dim);
+}
+
+.scheduleHint {
+    font-size: 0.64rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin-top: 2px;
+    /* reserve two lines so appearing/disappearing never shifts the layout */
+    min-height: 2.3em;
+    color: var(--bone-dim);
+}
+
+.crunchHint {
+    color: var(--danger);
+}
+
+.unhurriedHint {
+    color: var(--stat-legacy);
 }
 
 .block {
